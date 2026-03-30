@@ -1,3 +1,4 @@
+/** Must stay in sync with the inline <script> in each page <head> (early theme, avoids flash). */
 const THEME_KEY = "theme";
 const TAG_META_URL = "/assets/data/tag-meta.json";
 const LEGACY_TAG_META_KEY = "tagMetaV1";
