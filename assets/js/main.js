@@ -114,7 +114,7 @@ async function tagMetaResolveWritableHandle() {
 async function initTagMeta() {
   tagMetaCache = {};
   try {
-    const res = await fetch(TAG_META_URL, { cache: "no-store" });
+    const res = await fetch(resolveSiteAbsolutePath(TAG_META_URL), { cache: "no-store" });
     if (res.ok) {
       const parsed = await res.json();
       if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) tagMetaCache = parsed;
@@ -411,8 +411,10 @@ function setTheme(theme) {
     else localStorage.removeItem(THEME_KEY);
   } catch {}
 
-  const label = document.querySelector("[data-theme-label]");
-  if (label) label.textContent = root.dataset.theme ? root.dataset.theme : "system";
+  const t = root.dataset.theme ? root.dataset.theme : "system";
+  document.querySelectorAll("[data-theme-label]").forEach((label) => {
+    label.textContent = t;
+  });
 }
 
 function initTheme() {
@@ -432,29 +434,47 @@ function toggleTheme() {
 }
 
 function initSidebarToggle() {
-  const btn = document.querySelector("[data-sidebar-toggle]");
-  if (!btn) return;
+  const menuBtns = document.querySelectorAll("[data-sidebar-toggle]");
+  if (!menuBtns.length) return;
 
-  btn.addEventListener("click", () => {
-    const open = document.body.dataset.sidebarOpen === "true";
-    document.body.dataset.sidebarOpen = open ? "false" : "true";
+  const setOpen = (open) => {
+    document.body.dataset.sidebarOpen = open ? "true" : "false";
+    menuBtns.forEach((b) => b.setAttribute("aria-expanded", open ? "true" : "false"));
+  };
+
+  menuBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const open = document.body.dataset.sidebarOpen === "true";
+      setOpen(!open);
+    });
   });
 
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") document.body.dataset.sidebarOpen = "false";
+    if (e.key === "Escape") setOpen(false);
   });
 
   document.addEventListener("click", (e) => {
     if (document.body.dataset.sidebarOpen !== "true") return;
     const sidebar = document.querySelector(".sidebar");
     const isClickInside = sidebar && sidebar.contains(e.target);
-    const isMenuButton = btn.contains(e.target);
-    if (!isClickInside && !isMenuButton) document.body.dataset.sidebarOpen = "false";
+    const isMenuButton = [...menuBtns].some((b) => b.contains(e.target));
+    if (!isClickInside && !isMenuButton) setOpen(false);
   });
+
+  const mobileNavMq = window.matchMedia("(max-width: 820px)");
+  const closeOverlayIfDesktop = () => {
+    if (!mobileNavMq.matches) setOpen(false);
+  };
+  if (typeof mobileNavMq.addEventListener === "function") {
+    mobileNavMq.addEventListener("change", closeOverlayIfDesktop);
+  } else {
+    mobileNavMq.addListener(closeOverlayIfDesktop);
+  }
+  closeOverlayIfDesktop();
 }
 
 async function loadPosts() {
-  const res = await fetch("/posts/posts.json", { cache: "no-store" });
+  const res = await fetch(resolveSiteAbsolutePath("/posts/posts.json"), { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to load posts.json");
   const data = await res.json();
   if (!Array.isArray(data)) return [];
@@ -514,6 +534,51 @@ function renderPostCard(post) {
   return a;
 }
 
+function postMatchesSearchQuery(post, termLower) {
+  const hay = `${post.title || ""} ${getVisiblePostTags(post).join(" ")} ${post.description || ""}`.toLowerCase();
+  return hay.includes(termLower);
+}
+
+/** True on /posts/ index only (not single post pages). */
+function isPostsIndexPage() {
+  let p = location.pathname.replace(/\/index\.html$/i, "");
+  if (p.length > 1 && p.endsWith("/")) p = p.slice(0, -1);
+  if (!p) p = "/";
+  if (p === "/posts") return true;
+  const idx = p.lastIndexOf("/");
+  return idx >= 0 && p.slice(idx) === "/posts";
+}
+
+function navigateToPostsWithQuery(term) {
+  const base = resolveSiteAbsolutePath("/posts/");
+  let url;
+  try {
+    url = base.startsWith("http") ? new URL(base) : new URL(base, location.origin);
+  } catch {
+    url = new URL("/posts/", location.origin);
+  }
+  if (term) url.searchParams.set("q", term);
+  else url.searchParams.delete("q");
+  location.assign(url.href);
+}
+
+/** Home, about, post detail, etc.: typing in the topbar search goes to Posts with ?q=… (term kept in URL and restored in the input). */
+function initPostsSearchNavigateFromOtherPages() {
+  if (isPostsIndexPage()) return;
+  const input = document.querySelector("[data-posts-search]");
+  if (!input) return;
+  let debounceTimer = null;
+  input.addEventListener("input", () => {
+    const term = input.value.trim();
+    if (!term) {
+      clearTimeout(debounceTimer);
+      return;
+    }
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => navigateToPostsWithQuery(term), 400);
+  });
+}
+
 async function initLatestPosts() {
   const host = document.querySelector("[data-latest-posts]");
   if (!host) return;
@@ -543,6 +608,15 @@ async function initPostsIndex() {
   const params = new URLSearchParams(window.location.search);
   const tagFilter = params.get("tag");
 
+  function applyFilters() {
+    const term = q ? q.value.trim().toLowerCase() : "";
+    const base = tagFilter
+      ? posts.filter((p) => getVisiblePostTags(p).includes(tagFilter))
+      : posts;
+    if (!term) return base;
+    return base.filter((p) => postMatchesSearchQuery(p, term));
+  }
+
   function render(list) {
     host.innerHTML = "";
     if (!list.length) {
@@ -555,12 +629,18 @@ async function initPostsIndex() {
   try {
     posts = await loadPosts();
     posts.sort((a, b) => (String(b.date || "")).localeCompare(String(a.date || "")));
-    const filtered = tagFilter ? posts.filter((p) => getVisiblePostTags(p).includes(tagFilter)) : posts;
-    render(filtered);
   } catch {
     host.innerHTML = `<div class="muted">Could not load posts.</div>`;
     return;
   }
+
+  if (q && params.has("q")) {
+    q.value = params.get("q") || "";
+  }
+
+  render(applyFilters());
+
+  const keepSearchForTags = q ? q.value.trim() : "";
 
   const tagHost = document.querySelector("[data-tags-menu]");
   if (tagHost) {
@@ -570,25 +650,32 @@ async function initPostsIndex() {
     const cloud = document.createElement("div");
     cloud.className = "tag-cloud";
     all.forEach(([tag, count]) => {
-      const chip = renderTagChip(tag, count, { active: tag === tagFilter });
+      const chip = renderTagChip(tag, count, { active: tag === tagFilter, keepSearch: keepSearchForTags });
       if (chip) cloud.appendChild(chip);
     });
     tagHost.appendChild(cloud);
   }
 
   if (!q) return;
-  q.addEventListener("input", () => {
-    const term = q.value.trim().toLowerCase();
-    const base = tagFilter
-      ? posts.filter((p) => getVisiblePostTags(p).includes(tagFilter))
-      : posts;
 
-    if (!term) return render(base);
-    const filtered = base.filter((p) => {
-      const hay = `${p.title || ""} ${getVisiblePostTags(p).join(" ")} ${p.description || ""}`.toLowerCase();
-      return hay.includes(term);
-    });
-    render(filtered);
+  let urlDebounce = null;
+  function syncSearchParamToUrl() {
+    clearTimeout(urlDebounce);
+    urlDebounce = setTimeout(() => {
+      const p = new URLSearchParams(location.search);
+      const term = q.value.trim();
+      if (term) p.set("q", term);
+      else p.delete("q");
+      const qs = p.toString();
+      const next = location.pathname + (qs ? `?${qs}` : "") + location.hash;
+      const cur = location.pathname + location.search + location.hash;
+      if (next !== cur) history.replaceState(null, "", next);
+    }, 280);
+  }
+
+  q.addEventListener("input", () => {
+    render(applyFilters());
+    syncSearchParamToUrl();
   });
 }
 
@@ -854,14 +941,18 @@ function hashHue(input) {
   return h % 360;
 }
 
-function renderTagChip(tag, count, { active = false } = {}) {
+function renderTagChip(tag, count, { active = false, keepSearch = "" } = {}) {
   const meta = loadTagMeta();
   const info = meta[tag] || {};
   if (info.deleted) return null;
 
   const a = document.createElement("a");
   a.className = `tag${active ? " tag--active" : ""}`;
-  a.href = `/posts/?tag=${encodeURIComponent(tag)}`;
+  const qp = new URLSearchParams();
+  qp.set("tag", tag);
+  const qv = String(keepSearch || "").trim();
+  if (qv) qp.set("q", qv);
+  a.href = `/posts/?${qp.toString()}`;
   const { color, hue } = getTagColor(tag, info);
   a.style.setProperty("--tag-h", String(hue));
   a.style.setProperty("--tag-color", color);
@@ -994,11 +1085,92 @@ function initToc() {
   headings.forEach((h) => io.observe(h));
 }
 
+/** Map /assets/... and /posts/... to the correct origin when the site is under a subpath (e.g. GitHub Project Pages). */
+function resolveSiteAbsolutePath(path) {
+  if (!path || typeof path !== "string" || !path.startsWith("/")) return path;
+  const script = [...document.scripts].find((s) => /assets\/js\/main\.js(?:\?|$)/i.test(s.src));
+  if (!script || !script.src) return path;
+  const base = script.src.replace(/assets\/js\/main\.js(?:\?.*)?$/i, "");
+  if (base === script.src) return path;
+  try {
+    return new URL(path.replace(/^\//, ""), base).href;
+  } catch {
+    return path;
+  }
+}
+
+/** VS Code Live Server injects reload scripts into any served .html, including inside <svg> in fragments — that breaks the DOM and truncates fetches. Strip before parse. */
+function scrubDevServerInjection(html) {
+  let s = String(html || "");
+  s = s.replace(/<!--\s*Code injected by live-server\s*-->[\s\S]*?<\/script>/gi, "");
+  s = s.replace(/<script\b[^>]*>[\s\S]*?live-server[\s\S]*?<\/script>/gi, "");
+  return s;
+}
+
+function injectHtmlFragment(el, html) {
+  const raw = scrubDevServerInjection(String(html || "").replace(/^\uFEFF/, "")).trim();
+  if (!raw) {
+    el.replaceChildren();
+    return;
+  }
+  try {
+    const doc = new DOMParser().parseFromString(
+      `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${raw}</body></html>`,
+      "text/html"
+    );
+    if (doc.querySelector("parsererror")) {
+      el.innerHTML = raw;
+    } else {
+      el.replaceChildren(...doc.body.childNodes);
+    }
+  } catch {
+    el.innerHTML = raw;
+  }
+}
+
+async function loadHtmlPartials() {
+  const nodes = document.querySelectorAll("[data-include]");
+  await Promise.all(
+    [...nodes].map(async (el) => {
+      const url = el.getAttribute("data-include");
+      if (!url) return;
+      const fetchUrl = url.startsWith("/") ? resolveSiteAbsolutePath(url) : url;
+      try {
+        const res = await fetch(fetchUrl, { cache: "no-store" });
+        if (!res.ok) return;
+        injectHtmlFragment(el, await res.text());
+        el.removeAttribute("data-include");
+      } catch {
+        //
+      }
+    })
+  );
+}
+
+function initSidebarNavActive() {
+  let p = location.pathname.replace(/\/index\.html$/i, "");
+  if (p.length > 1 && p.endsWith("/")) p = p.slice(0, -1);
+  if (!p) p = "/";
+  document.querySelectorAll(".sidebar .nav__item").forEach((a) => a.classList.remove("nav__item--active"));
+  let activeHref = null;
+  if (p === "/about.html") activeHref = "/about.html";
+  else if (p === "/tags" || p.startsWith("/tags/")) activeHref = "/tags/";
+  else if (p === "/posts" || p.startsWith("/posts/")) activeHref = "/posts/";
+  else if (p === "/") activeHref = "/";
+  if (!activeHref) return;
+  document.querySelectorAll(".sidebar a.nav__item").forEach((a) => {
+    if (a.getAttribute("href") === activeHref) a.classList.add("nav__item--active");
+  });
+}
+
 (async function startApp() {
+  await loadHtmlPartials();
+  initSidebarNavActive();
   await initTagMeta();
   initTheme();
   wireThemeButtons();
   initSidebarToggle();
+  initPostsSearchNavigateFromOtherPages();
   initLatestPosts();
   initPostsIndex();
   initTrendingTags();

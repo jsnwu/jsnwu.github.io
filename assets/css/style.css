@@ -90,10 +90,20 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   background: var(--sidebar-bg);
   display:flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 0;
+  min-height: 0;
 }
-
+/* One injected wrapper: real flex column (avoid display:contents quirks in some engines). */
+.sidebar__chunk{
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
 .sidebar__brand{
+  flex-shrink: 0;
   padding: 12px 10px 8px;
   border-radius: var(--radius);
   background: transparent;
@@ -136,7 +146,13 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   color: var(--muted);
 }
 
-.nav{ display:flex; flex-direction: column; gap: 8px; padding: 0 6px; }
+.nav{
+  display:flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 6px;
+  flex-shrink: 0;
+}
 .nav__item{
   display:flex;
   align-items:center;
@@ -146,13 +162,21 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   border: 1px solid transparent;
   color: var(--muted);
 }
+.nav__item > span{
+  min-width: 0;
+}
 .nav__icon{
   width: 16px;
   height: 16px;
   flex: 0 0 16px;
-  color: var(--faint);
+  display: block;
+  object-fit: contain;
+  opacity: 0.55;
 }
-.nav__item--active .nav__icon{ color: var(--text); }
+.nav__item:hover .nav__icon,
+.nav__item--active .nav__icon{
+  opacity: 1;
+}
 .nav__item:hover{
   text-decoration: none;
   background: var(--surface);
@@ -166,6 +190,7 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
 }
 
 .sidebar__footer{
+  flex-shrink: 0;
   margin-top: auto;
   display:flex;
   flex-direction: column;
@@ -193,8 +218,54 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   gap: var(--rail-gap);
   align-items: center;
 }
+.topbar__inner:has(.topbar__search){
+  align-items: start;
+}
 .topbar__inner:not(:has(.topbar__search)){
-  grid-template-columns: minmax(0, var(--content-max));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.topbar__inner:not(:has(.topbar__search)) .topbar__lead{
+  flex: 1;
+  min-width: 0;
+}
+.topbar__inner:not(:has(.topbar__search)) .topbar__tools{
+  flex: 0 0 auto;
+}
+.topbar__lead{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.topbar__tools{
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+/* Full rail width for search: theme + search were sharing one row and shrinking the field. */
+.topbar__tools:has(.topbar__search){
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+}
+.topbar__tools:has(.topbar__search) > div:first-child{
+  align-self: flex-end;
+}
+.topbar__lead .topbar__crumb{
+  flex: 1;
+  min-width: 0;
+}
+.topbar__menu-icon{
+  width: 20px;
+  height: 20px;
+  display: block;
+  object-fit: contain;
 }
 .topbar__crumb{
   display:flex;
@@ -224,8 +295,11 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   color: var(--text);
   font-weight: 650;
 }
-.topbar__menu{ display:none; }
-.topbar__theme{ display:none; }
+/* Must beat .button { display: inline-flex } which appears later in this file. */
+.button.topbar__menu,
+.button.topbar__theme{
+  display: none;
+}
 .topbar__search{
   display:flex;
   align-items:center;
@@ -246,16 +320,17 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   background: var(--panel-bg);
 }
 .search__icon{
-  color: var(--faint);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
-.search__icon svg{
+.search__icon img{
   width: 18px;
   height: 18px;
   display: block;
+  object-fit: contain;
+  opacity: 0.65;
 }
 .search__input{
   width: 100%;
@@ -639,6 +714,7 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
     top: 60px;
     height: auto;
     max-height: calc(100vh - 84px);
+    overflow-y: auto;
     transform: translateY(-8px);
     opacity: 0;
     pointer-events: none;
@@ -653,10 +729,51 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
     transform: translateY(0);
     pointer-events: auto;
   }
-  .topbar__menu{ display:inline-flex; }
-  .topbar__theme{ display:inline-flex; }
+  .sidebar__chunk{
+    overflow-y: visible;
+  }
+  .button.topbar__menu,
+  .button.topbar__theme{
+    display: inline-flex;
+  }
   .topbar__search{ display:none; }
   .main{ padding: 18px var(--layout-pad-x) 30px; }
+
+  /* Menu left, theme right on one row; crumb full width below (avoids theme on a second row). */
+  .topbar__inner,
+  .topbar__inner:not(:has(.topbar__search)){
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-rows: auto auto;
+    gap: 10px 12px;
+    align-items: center;
+  }
+  .topbar__inner:has(.topbar__search){
+    align-items: center;
+  }
+  .topbar__lead{
+    display: contents;
+  }
+  .topbar__tools{
+    display: contents;
+  }
+  .topbar__lead > div:first-child{
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .topbar__crumb{
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-width: 0;
+  }
+  .topbar__tools > div:first-child{
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+  }
+  .topbar__tools > div:last-child:not(:only-child){
+    display: none;
+  }
 }
 
 @media (max-width: 720px){
