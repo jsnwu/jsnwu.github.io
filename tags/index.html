@@ -69,12 +69,22 @@
       </aside>
 
       <header class="topbar" aria-label="Top bar">
-        <div class="topbar__title">Tags</div>
-        <div class="topbar__spacer"></div>
-        <div class="topbar__search" role="search">
-          <div class="search">
-            <span class="search__icon" aria-hidden="true">⌘K</span>
-            <input class="search__input" type="search" placeholder="Search posts…" aria-label="Search posts" data-posts-search />
+        <div class="topbar__inner">
+          <nav class="topbar__crumb" aria-label="Breadcrumb">
+            <a class="topbar__crumb-link" href="/">Home</a>
+            <span class="topbar__crumb-sep" aria-hidden="true">&gt;</span>
+            <span class="topbar__crumb-current">Tags</span>
+          </nav>
+          <div class="topbar__search" role="search">
+            <div class="search">
+              <span class="search__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M16.5 16.5 21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            </span>
+              <input class="search__input" type="search" placeholder="Search posts…" aria-label="Search posts" data-posts-search />
+            </div>
           </div>
         </div>
       </header>
@@ -84,23 +94,22 @@
           <section class="content">
             <div class="post-header">
               <h1 class="post-title">Tags</h1>
-              <div class="post-meta">
-                <span class="muted">Manage tag display names, colors, and visibility (saved in this browser).</span>
-              </div>
             </div>
 
             <div class="form" data-tags-manager>
-              <div class="form-row">
-                <input class="input input--sm" data-new-tag-name type="text" placeholder="new-tag" aria-label="New tag name" />
-                <input class="input input--sm" data-new-tag-color type="color" aria-label="New tag color" style="width:110px;height:36px;padding:4px 6px" />
-                <button class="button" type="button" data-add-tag>Add tag</button>
+              <div data-tags-edit-only>
+                <p class="muted small tags-manager__status" data-tag-meta-status aria-live="polite"></p>
+                <div class="tag-row" aria-label="Add new tag">
+                  <div class="tag-row__left">
+                    <span class="tag-row__meta">New tag</span>
+                  </div>
+                  <input class="input input--sm" data-new-tag-name type="text" placeholder="new-tag" aria-label="New tag name" />
+                  <div class="colorpick" data-new-tag-color aria-label="New tag color"></div>
+                  <button class="button" type="button" data-add-tag>Add tag</button>
+                </div>
               </div>
 
               <div class="tags-manager" data-tags-list aria-live="polite"></div>
-
-              <div class="muted small">
-                Rules: tag names must be unique and use only lowercase letters/numbers with single dashes (e.g. <code>machine-learning</code>).
-              </div>
             </div>
           </section>
 

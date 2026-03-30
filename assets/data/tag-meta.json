@@ -1,0 +1,11 @@
+{
+  "123": {
+    "deleted": false,
+    "color": "#84CC16"
+  },
+  "demo": {
+    "hue": 1,
+    "deleted": false,
+    "color": "#3B82F6"
+  }
+}

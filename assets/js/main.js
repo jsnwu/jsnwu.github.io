@@ -1,22 +1,210 @@
 const THEME_KEY = "theme";
-const TAG_META_KEY = "tagMetaV1";
+const TAG_META_URL = "/assets/data/tag-meta.json";
+const LEGACY_TAG_META_KEY = "tagMetaV1";
+const TAG_META_IDB = "site-tag-meta";
+const TAG_META_IDB_STORE = "kv";
+const TAG_META_IDB_KEY = "tagMetaFileHandle";
 
-function loadTagMeta() {
+let tagMetaCache = {};
+let tagMetaFileHandle = null;
+
+function tagMetaOpenIdb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(TAG_META_IDB, 1);
+    req.onerror = () => reject(req.error);
+    req.onupgradeneeded = () => {
+      if (!req.result.objectStoreNames.contains(TAG_META_IDB_STORE)) {
+        req.result.createObjectStore(TAG_META_IDB_STORE);
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+  });
+}
+
+async function tagMetaSaveHandleToIdb(handle) {
+  if (!handle) return;
   try {
-    const raw = localStorage.getItem(TAG_META_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return {};
-    return parsed;
+    const db = await tagMetaOpenIdb();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(TAG_META_IDB_STORE, "readwrite");
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      tx.objectStore(TAG_META_IDB_STORE).put(handle, TAG_META_IDB_KEY);
+    });
+    db.close();
   } catch {
-    return {};
+    //
   }
 }
 
-function saveTagMeta(meta) {
+async function tagMetaLoadHandleFromIdb() {
   try {
-    localStorage.setItem(TAG_META_KEY, JSON.stringify(meta || {}));
-  } catch {}
+    const db = await tagMetaOpenIdb();
+    const handle = await new Promise((resolve, reject) => {
+      const tx = db.transaction(TAG_META_IDB_STORE, "readonly");
+      const r = tx.objectStore(TAG_META_IDB_STORE).get(TAG_META_IDB_KEY);
+      r.onsuccess = () => resolve(r.result || null);
+      r.onerror = () => reject(r.error);
+    });
+    db.close();
+    return handle;
+  } catch {
+    return null;
+  }
+}
+
+async function tagMetaClearHandleIdb() {
+  try {
+    const db = await tagMetaOpenIdb();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(TAG_META_IDB_STORE, "readwrite");
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      tx.objectStore(TAG_META_IDB_STORE).delete(TAG_META_IDB_KEY);
+    });
+    db.close();
+  } catch {
+    //
+  }
+}
+
+async function tagMetaEnsureWritePermission(handle) {
+  if (!handle || typeof handle.queryPermission !== "function") return false;
+  const opts = { mode: "readwrite" };
+  try {
+    let state = await handle.queryPermission(opts);
+    if (state === "granted") return true;
+    if (state === "denied") return false;
+    if (typeof handle.requestPermission === "function") {
+      state = await handle.requestPermission(opts);
+      return state === "granted";
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
+
+/** Restore saved handle if permission already granted (no user gesture). */
+async function tagMetaWarmFileHandleFromIdb() {
+  try {
+    const h = await tagMetaLoadHandleFromIdb();
+    if (!h) return;
+    const state = await h.queryPermission({ mode: "readwrite" });
+    if (state === "granted") tagMetaFileHandle = h;
+  } catch {
+    //
+  }
+}
+
+async function tagMetaResolveWritableHandle() {
+  let h = tagMetaFileHandle;
+  if (!h) {
+    h = await tagMetaLoadHandleFromIdb();
+  }
+  if (!h) return null;
+  if (await tagMetaEnsureWritePermission(h)) {
+    tagMetaFileHandle = h;
+    return h;
+  }
+  return null;
+}
+
+async function initTagMeta() {
+  tagMetaCache = {};
+  try {
+    const res = await fetch(TAG_META_URL, { cache: "no-store" });
+    if (res.ok) {
+      const parsed = await res.json();
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) tagMetaCache = parsed;
+    }
+  } catch {
+    // e.g. file:// without a server
+  }
+  if (Object.keys(tagMetaCache).length === 0) {
+    try {
+      const raw = localStorage.getItem(LEGACY_TAG_META_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) tagMetaCache = parsed;
+      }
+    } catch {
+      //
+    }
+  }
+  await tagMetaWarmFileHandleFromIdb();
+}
+
+function loadTagMeta() {
+  return tagMetaCache;
+}
+
+/** Tags page: edit vs read-only. Query overrides host (e.g. ?readonly=true on localhost, ?readonly=false to force edit on the live site). */
+function isTagsManagerEditMode() {
+  try {
+    const p = new URLSearchParams(location.search);
+    if (p.has("readonly")) {
+      const v = (p.get("readonly") || "").trim().toLowerCase();
+      if (v === "false" || v === "0" || v === "no") return true;
+      return false;
+    }
+  } catch {
+    //
+  }
+  if (location.protocol === "file:") return true;
+  const h = (location.hostname || "").toLowerCase();
+  if (h === "localhost" || h === "127.0.0.1" || h === "[::1]") return true;
+  if (h.endsWith(".localhost") || h.endsWith(".local")) return true;
+  if (/^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(h)) return true;
+  return false;
+}
+
+async function persistTagMeta() {
+  const str = JSON.stringify(tagMetaCache, null, 2) + "\n";
+
+  async function writeThroughHandle(handle) {
+    const writable = await handle.createWritable();
+    await writable.write(str);
+    await writable.close();
+  }
+
+  const resolved = await tagMetaResolveWritableHandle();
+  if (resolved) {
+    try {
+      await writeThroughHandle(resolved);
+      return { ok: true, mode: "file" };
+    } catch {
+      tagMetaFileHandle = null;
+      await tagMetaClearHandleIdb();
+    }
+  }
+
+  if (typeof window.showSaveFilePicker === "function") {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: "tag-meta.json",
+        types: [{ description: "JSON", accept: { "application/json": [".json"] } }],
+      });
+      tagMetaFileHandle = handle;
+      await writeThroughHandle(handle);
+      await tagMetaSaveHandleToIdb(handle);
+      return { ok: true, mode: "file" };
+    } catch (e) {
+      if (e && e.name === "AbortError") return { ok: false, aborted: true };
+    }
+  }
+
+  const blob = new Blob([str], { type: "application/json" });
+  const a = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  a.href = url;
+  a.download = "tag-meta.json";
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  return { ok: true, mode: "download" };
 }
 
 function isValidTagName(name) {
@@ -41,6 +229,162 @@ function getTagColor(tag, info) {
   const hue = hashHue(tag);
   const color = info && info.color ? String(info.color) : `hsl(${hue} 92% 60%)`;
   return { color, hue };
+}
+
+function normalizeHexColor(input) {
+  const v = String(input || "").trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) return v.toUpperCase();
+  return "";
+}
+
+function buildColorGridPicker(host, { value = "", autoColor = "", onChange, ariaLabel = "Color" } = {}) {
+  if (!host) return null;
+
+  const PALETTE = [
+    "#EF4444", "#F97316", "#F59E0B", "#EAB308", "#84CC16",
+    "#22C55E", "#10B981", "#06B6D4", "#0EA5E9", "#3B82F6",
+    "#6366F1", "#8B5CF6", "#A855F7", "#D946EF", "#EC4899",
+    "#F43F5E", "#94A3B8", "#64748B", "#334155", "#111827",
+  ];
+
+  const state = {
+    value: normalizeHexColor(value) || "",
+    open: false,
+  };
+
+  host.innerHTML = "";
+  host.classList.add("colorpick");
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "colorpick__btn";
+  btn.setAttribute("aria-label", ariaLabel);
+  btn.setAttribute("aria-haspopup", "dialog");
+  btn.setAttribute("aria-expanded", "false");
+
+  const dot = document.createElement("span");
+  dot.className = "colorpick__dot";
+  btn.appendChild(dot);
+
+  const pop = document.createElement("div");
+  pop.className = "colorpick__popover";
+  pop.hidden = true;
+
+  const grid = document.createElement("div");
+  grid.className = "colorpick__grid";
+  pop.appendChild(grid);
+
+  const actions = document.createElement("div");
+  actions.className = "colorpick__actions";
+
+  const resetBtn = document.createElement("button");
+  resetBtn.type = "button";
+  resetBtn.className = "colorpick__textbtn";
+  resetBtn.textContent = "Auto";
+
+  const customBtn = document.createElement("button");
+  customBtn.type = "button";
+  customBtn.className = "colorpick__textbtn";
+  customBtn.textContent = "Custom…";
+
+  actions.appendChild(resetBtn);
+  actions.appendChild(customBtn);
+  pop.appendChild(actions);
+
+  const native = document.createElement("input");
+  native.type = "color";
+  native.setAttribute("aria-label", `${ariaLabel} (custom)`);
+  native.style.position = "absolute";
+  native.style.left = "-9999px";
+  native.style.width = "1px";
+  native.style.height = "1px";
+  native.tabIndex = -1;
+
+  host.appendChild(btn);
+  host.appendChild(pop);
+  host.appendChild(native);
+
+  function render() {
+    const sw = state.value || String(autoColor || "").trim() || "transparent";
+    dot.style.setProperty("--swatch", sw);
+    dot.style.background = sw;
+    btn.setAttribute("aria-expanded", state.open ? "true" : "false");
+
+    [...grid.children].forEach((el) => {
+      const c = el && el.dataset && el.dataset.color;
+      if (!c) return;
+      el.setAttribute("aria-checked", c === state.value ? "true" : "false");
+    });
+  }
+
+  function setOpen(next) {
+    state.open = !!next;
+    pop.hidden = !state.open;
+    render();
+  }
+
+  function setValue(next) {
+    const v = normalizeHexColor(next);
+    state.value = v;
+    render();
+    if (typeof onChange === "function") onChange(v);
+  }
+
+  PALETTE.forEach((hex) => {
+    const swatch = document.createElement("button");
+    swatch.type = "button";
+    swatch.className = "colorpick__swatch";
+    swatch.dataset.color = hex;
+    swatch.style.setProperty("--swatch", hex);
+    swatch.setAttribute("role", "radio");
+    swatch.setAttribute("aria-checked", "false");
+    swatch.setAttribute("aria-label", hex);
+    swatch.addEventListener("click", () => {
+      setValue(hex);
+      setOpen(false);
+    });
+    grid.appendChild(swatch);
+  });
+
+  btn.addEventListener("click", () => setOpen(!state.open));
+
+  resetBtn.addEventListener("click", () => {
+    setValue("");
+    setOpen(false);
+  });
+
+  customBtn.addEventListener("click", () => {
+    native.value = state.value || "#3B82F6";
+    native.click();
+  });
+
+  native.addEventListener("change", () => {
+    setValue(native.value);
+    setOpen(false);
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!state.open) return;
+    if (host.contains(e.target)) return;
+    setOpen(false);
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (!state.open) return;
+    if (e.key === "Escape") setOpen(false);
+  });
+
+  render();
+
+  return {
+    get value() {
+      return state.value;
+    },
+    setValue,
+    close() {
+      setOpen(false);
+    },
+  };
 }
 
 function getVisiblePostTags(post) {
@@ -252,22 +596,57 @@ async function initTagsManager() {
   const list = document.querySelector("[data-tags-list]");
   if (!root || !list) return;
 
+  const editMode = isTagsManagerEditMode();
+  root.dataset.tagsMode = editMode ? "edit" : "readonly";
+
+  root.querySelectorAll("[data-tags-edit-only]").forEach((el) => {
+    el.hidden = !editMode;
+  });
+
   const addBtn = root.querySelector("[data-add-tag]");
   const newNameEl = root.querySelector("[data-new-tag-name]");
   const newColorEl = root.querySelector("[data-new-tag-color]");
+  const statusEl = root.querySelector("[data-tag-meta-status]");
+  let newColorPicker = null;
 
-  const meta = loadTagMeta();
   let posts = [];
   try {
     posts = await loadPosts();
   } catch {
     // ok
   }
-  const counts = countTags(posts);
-  Object.keys(meta).forEach((name) => {
-    if (!counts.has(name)) counts.set(name, 0);
-  });
-  const rows = [...counts.entries()].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
+
+  function buildRows() {
+    const meta = loadTagMeta();
+    const counts = countTags(posts);
+    Object.keys(meta).forEach((name) => {
+      if (!counts.has(name)) counts.set(name, 0);
+    });
+    return [...counts.entries()].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
+  }
+
+  async function setStatusAfterSave(result) {
+    if (!statusEl) return;
+    if (!result || result.aborted) return;
+    if (result.mode === "file") {
+      statusEl.textContent = "Saved to tag-meta.json — commit and push when you are ready.";
+    } else if (result.mode === "download") {
+      statusEl.textContent =
+        "Downloaded tag-meta.json — replace assets/data/tag-meta.json in your repo, then commit and push.";
+    }
+  }
+
+  async function persistAndRefresh() {
+    const r = await persistTagMeta();
+    if (r.aborted) {
+      await initTagMeta();
+      render();
+      return r;
+    }
+    await setStatusAfterSave(r);
+    render();
+    return r;
+  }
 
   function renderDisabledChip(tagName, count, info) {
     const a = document.createElement("span");
@@ -287,7 +666,48 @@ async function initTagsManager() {
     return a;
   }
 
+  function renderReadonlyList() {
+    const meta = loadTagMeta();
+    const rows = buildRows();
+    list.innerHTML = "";
+    rows.forEach(([name, count]) => {
+      const info = meta[name] || {};
+      if (info.deleted) return;
+
+      const row = document.createElement("div");
+      row.className = "tag-row tag-row--readonly";
+
+      const left = document.createElement("div");
+      left.className = "tag-row__left";
+
+      const chip = renderTagChip(name, count) || renderDisabledChip(name, count, info);
+      left.appendChild(chip);
+
+      const metaText = document.createElement("div");
+      metaText.className = "tag-row__meta";
+      metaText.textContent = `${count} post${count === 1 ? "" : "s"}${info.renameTo ? ` · renamed → ${info.renameTo}` : ""}${info.deleted ? " · hidden" : ""}`;
+      left.appendChild(metaText);
+
+      const { color } = getTagColor(name, info);
+      const swatch = document.createElement("span");
+      swatch.className = "tag-row__swatch";
+      swatch.title = "Tag color";
+      swatch.style.background = color;
+
+      row.appendChild(left);
+      row.appendChild(swatch);
+      list.appendChild(row);
+    });
+  }
+
   function render() {
+    if (!editMode) {
+      renderReadonlyList();
+      return;
+    }
+
+    const meta = loadTagMeta();
+    const rows = buildRows();
     list.innerHTML = "";
     rows.forEach(([name, count]) => {
       const info = meta[name] || {};
@@ -312,60 +732,80 @@ async function initTagsManager() {
       renameInput.placeholder = "Rename to (optional)";
       renameInput.value = String(info.renameTo || "");
 
-      const colorInput = document.createElement("input");
-      colorInput.className = "input input--sm";
-      colorInput.type = "color";
-      colorInput.value = String(info.color || getTagColor(name, info).color);
+      const colorHost = document.createElement("div");
+      colorHost.className = "colorpick";
 
       const delBtn = document.createElement("button");
       delBtn.className = `button button--ghost ${info.deleted ? "" : "button--danger"}`.trim();
       delBtn.type = "button";
       delBtn.textContent = info.deleted ? "Restore" : "Delete";
 
-      renameInput.addEventListener("change", () => {
+      renameInput.addEventListener("change", async () => {
         const v = normalizeTagName(renameInput.value || "");
         meta[name] = { ...(meta[name] || {}) };
         if (!v) delete meta[name].renameTo;
         else if (!isValidTagName(v)) return;
         else if (v === name) delete meta[name].renameTo;
         else meta[name].renameTo = v;
-        saveTagMeta(meta);
-        location.reload();
+        await persistAndRefresh();
       });
 
-      colorInput.addEventListener("change", () => {
-        const v = String(colorInput.value || "").trim();
-        meta[name] = { ...(meta[name] || {}) };
-        if (v) meta[name].color = v;
-        else delete meta[name].color;
-        saveTagMeta(meta);
-        location.reload();
+      const initial = normalizeHexColor(info.color) || "";
+      const derived = getTagColor(name, info).color;
+      buildColorGridPicker(colorHost, {
+        value: initial,
+        autoColor: derived,
+        ariaLabel: `Color for ${name}`,
+        onChange: async (hex) => {
+          meta[name] = { ...(meta[name] || {}) };
+          if (hex) meta[name].color = hex;
+          else delete meta[name].color;
+          await persistAndRefresh();
+        },
       });
 
-      delBtn.addEventListener("click", () => {
-        meta[name] = { ...(meta[name] || {}), deleted: !info.deleted };
-        saveTagMeta(meta);
-        location.reload();
+      delBtn.addEventListener("click", async () => {
+        const m = loadTagMeta();
+        const cur = m[name] || {};
+        m[name] = { ...cur, deleted: !cur.deleted };
+        await persistAndRefresh();
       });
 
       row.appendChild(left);
       row.appendChild(renameInput);
-      row.appendChild(colorInput);
+      row.appendChild(colorHost);
       row.appendChild(delBtn);
       list.appendChild(row);
     });
   }
 
-  if (addBtn) {
-    addBtn.addEventListener("click", () => {
+  if (editMode && newColorEl) {
+    newColorPicker = buildColorGridPicker(newColorEl, {
+      value: "",
+      ariaLabel: "New tag color",
+      onChange: () => {},
+    });
+  }
+
+  if (editMode && addBtn) {
+    addBtn.addEventListener("click", async () => {
+      const meta = loadTagMeta();
       const name = normalizeTagName(newNameEl && newNameEl.value);
       if (!name || !isValidTagName(name)) return;
-      const color = String((newColorEl && newColorEl.value) || "").trim();
+      const color = newColorPicker ? String(newColorPicker.value || "").trim() : "";
       meta[name] = { ...(meta[name] || {}) };
       if (color) meta[name].color = color;
       if (meta[name].deleted) meta[name].deleted = false;
-      saveTagMeta(meta);
-      location.reload();
+      const r = await persistTagMeta();
+      if (r.aborted) {
+        await initTagMeta();
+        render();
+        return;
+      }
+      await setStatusAfterSave(r);
+      if (newNameEl) newNameEl.value = "";
+      if (newColorPicker && newColorPicker.setValue) newColorPicker.setValue("");
+      render();
     });
   }
 
@@ -553,14 +993,17 @@ function initToc() {
   headings.forEach((h) => io.observe(h));
 }
 
-initTheme();
-wireThemeButtons();
-initSidebarToggle();
-initLatestPosts();
-initPostsIndex();
-initTrendingTags();
-initRecentlyUpdated();
-initToc();
-initTagsManager();
-initYear();
+(async function startApp() {
+  await initTagMeta();
+  initTheme();
+  wireThemeButtons();
+  initSidebarToggle();
+  initLatestPosts();
+  initPostsIndex();
+  initTrendingTags();
+  initRecentlyUpdated();
+  initToc();
+  await initTagsManager();
+  initYear();
+})();
 

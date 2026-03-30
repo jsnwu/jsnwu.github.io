@@ -21,7 +21,7 @@
           <div class="sidebar__brandRow">
             <div>
               <a class="brand" href="/">Jason Wu</a>
-              <div class="brand__sub">Notes</div>
+              <div class="brand__sub">Live Blogs</div>
             </div>
           </div>
         </div>
@@ -69,12 +69,20 @@
       </aside>
 
       <header class="topbar" aria-label="Top bar">
-        <div class="topbar__title">Home</div>
-        <div class="topbar__spacer"></div>
-        <div class="topbar__search" role="search">
-          <div class="search">
-            <span class="search__icon" aria-hidden="true">⌘K</span>
-            <input class="search__input" type="search" placeholder="Search posts…" aria-label="Search posts" data-posts-search />
+        <div class="topbar__inner">
+          <nav class="topbar__crumb" aria-label="Breadcrumb">
+            <span class="topbar__crumb-current">Home</span>
+          </nav>
+          <div class="topbar__search" role="search">
+            <div class="search">
+              <span class="search__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M16.5 16.5 21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            </span>
+              <input class="search__input" type="search" placeholder="Search posts…" aria-label="Search posts" data-posts-search />
+            </div>
           </div>
         </div>
       </header>
