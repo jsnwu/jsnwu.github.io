@@ -1,0 +1,19 @@
+[
+  {
+    "title": "Getting started",
+    "date": "2026-03-30",
+    "tags": ["tutorial", "setup"],
+    "readingTime": "2 min",
+    "description": "How this repo is organized, and how to add posts without any build step.",
+    "url": "/posts/getting-started.html"
+  },
+  {
+    "title": "Text & typography",
+    "date": "2026-03-30",
+    "tags": ["demo", "typography"],
+    "readingTime": "3 min",
+    "description": "Examples for headings, lists, code blocks, and callouts.",
+    "url": "/posts/text-and-typography.html"
+  }
+]
+

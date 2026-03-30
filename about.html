@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <title>About · Jason Wu</title>
+    <meta name="description" content="About this site." />
+    <link rel="stylesheet" href="/assets/css/style.css" />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <div class="app">
+      <aside class="sidebar" aria-label="Sidebar">
+        <div class="sidebar__brand">
+          <div class="brand__right" aria-hidden="true">
+            <img class="brand__logo" src="/assets/img/logo.png" alt="" />
+          </div>
+          <div class="sidebar__brandRow">
+            <div>
+              <a class="brand" href="/">Jason Wu</a>
+              <div class="brand__sub">Notes</div>
+            </div>
+          </div>
+        </div>
+
+        <nav class="nav" aria-label="Primary">
+          <a class="nav__item" href="/">
+            <svg class="nav__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-10.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+            </svg>
+            <span>Home</span>
+          </a>
+          <a class="nav__item" href="/posts/">
+            <svg class="nav__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M7 3h10a2 2 0 0 1 2 2v16l-3-2-3 2-3-2-3 2V5a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+              <path d="M9 7h6M9 11h6M9 15h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            <span>Posts</span>
+          </a>
+          <a class="nav__item" href="/tags/">
+            <svg class="nav__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M20 13l-7.6 7.6a2 2 0 0 1-2.8 0L3 14V4h10l7 7a2 2 0 0 1 0 2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+              <path d="M7.5 7.5h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+            <span>Tags</span>
+          </a>
+          <a class="nav__item nav__item--active" href="/about.html">
+            <svg class="nav__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 21a9 9 0 1 0-9-9 9 9 0 0 0 9 9Z" stroke="currentColor" stroke-width="1.8"/>
+              <path d="M12 10.5v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M12 7.5h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+            <span>About</span>
+          </a>
+        </nav>
+
+        <div class="sidebar__footer">
+          <button class="button button--ghost" type="button" data-theme-toggle>
+            <span class="button__icon" aria-hidden="true">◐</span>
+            <span class="button__text" data-theme-label>Theme</span>
+          </button>
+          <div class="muted small">
+            <span id="year"></span> · <a href="https://github.com/jsnwu">GitHub</a>
+          </div>
+        </div>
+      </aside>
+
+      <header class="topbar" aria-label="Top bar">
+        <div class="topbar__title">About</div>
+        <div class="topbar__spacer"></div>
+        <div class="topbar__search" role="search">
+          <div class="search">
+            <span class="search__icon" aria-hidden="true">⌘K</span>
+            <input class="search__input" type="search" placeholder="Search posts…" aria-label="Search posts" data-posts-search />
+          </div>
+        </div>
+      </header>
+
+      <main id="main" class="main" tabindex="-1">
+        <div class="main-inner">
+          <article class="content" data-article>
+            <header class="post-header">
+              <h1 class="post-title">About</h1>
+              <div class="post-meta">
+                <span class="pill">Static</span>
+                <span class="pill">No build</span>
+                <span class="pill">GitHub Pages</span>
+              </div>
+            </header>
+
+            <p>
+              This is a minimal site inspired by the layout and “technical writing” vibe of
+              <a href="https://chirpy.cotes.page/">Chirpy</a>.
+            </p>
+          </article>
+
+          <aside class="rail" aria-label="Right rail">
+            <section class="widget">
+              <h2 class="widget__title">Recently updated</h2>
+              <div class="widget__list" data-recently-updated></div>
+            </section>
+            <section class="widget">
+              <h2 class="widget__title">Trending tags</h2>
+              <div class="widget__list" data-trending-tags></div>
+            </section>
+          </aside>
+        </div>
+      </main>
+    </div>
+
+    <script src="/assets/js/main.js" defer></script>
+  </body>
+</html>
