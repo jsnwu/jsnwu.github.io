@@ -5,7 +5,7 @@
     "tags": ["tutorial", "setup"],
     "readingTime": "2 min",
     "description": "How this repo is organized, and how to add posts without any build step.",
-    "url": "/posts/getting-started.html"
+    "url": "/posts/articles/getting-started.html"
   },
   {
     "title": "Text & typography",
@@ -13,7 +13,15 @@
     "tags": ["demo", "typography"],
     "readingTime": "3 min",
     "description": "Examples for headings, lists, code blocks, and callouts.",
-    "url": "/posts/text-and-typography.html"
+    "url": "/posts/articles/text-and-typography.html"
+  },
+  {
+    "title": "Text driven Web UI recorder and player",
+    "date": "2026-03-30",
+    "tags": ["ui", "recorder", "player"],
+    "readingTime": "3 min",
+    "description": "A project to make web automation simplier for Dev&QAs",
+    "url": "/posts/articles/text-driven-ui-play.html"
   }
 ]
 

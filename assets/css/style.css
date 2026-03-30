@@ -121,6 +121,9 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   object-fit: contain;
   border-radius: 18px;
 }
+.brand__logo--light{ display: none; }
+:root[data-theme="light"] .brand__logo--dark{ display: none; }
+:root[data-theme="light"] .brand__logo--light{ display: block; }
 .sidebar__brandRow{
   display:flex;
   justify-content: center;
@@ -257,9 +260,13 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
 .topbar__tools:has(.topbar__search) > div:first-child{
   align-self: flex-end;
 }
-.topbar__lead .topbar__crumb{
+.topbar__lead > div:nth-child(2){
   flex: 1;
   min-width: 0;
+}
+.topbar__lead .topbar__crumb{
+  min-width: 0;
+  width: 100%;
 }
 .topbar__menu-icon{
   width: 20px;
@@ -761,7 +768,8 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
     grid-column: 1;
     grid-row: 1;
   }
-  .topbar__crumb{
+  /* Crumb lives in the second lead wrapper (after partial include); nav is inside it. */
+  .topbar__lead > div:nth-child(2){
     grid-column: 1 / -1;
     grid-row: 2;
     min-width: 0;

@@ -1147,6 +1147,53 @@ async function loadHtmlPartials() {
   );
 }
 
+/**
+ * Fill topbar breadcrumbs from JSON on the include wrapper:
+ * data-breadcrumb='[{"text":"Home","href":"/"},{"text":"About"}]'
+ * Segments with href become links; the last segment (or any without href) is the current page.
+ */
+function initTopbarBreadcrumbs() {
+  document.querySelectorAll("[data-breadcrumb]").forEach((host) => {
+    const raw = host.getAttribute("data-breadcrumb");
+    if (raw == null || raw === "") return;
+    let items;
+    try {
+      items = JSON.parse(raw);
+    } catch {
+      return;
+    }
+    if (!Array.isArray(items) || items.length === 0) return;
+    const nav = host.querySelector("nav.topbar__crumb");
+    if (!nav) return;
+    nav.replaceChildren();
+    items.forEach((item, i) => {
+      const text = item.text != null ? String(item.text) : "";
+      if (!text) return;
+      if (i > 0) {
+        const sep = document.createElement("span");
+        sep.className = "topbar__crumb-sep";
+        sep.setAttribute("aria-hidden", "true");
+        sep.textContent = ">";
+        nav.appendChild(sep);
+      }
+      const href = item.href != null && String(item.href) !== "" ? String(item.href) : null;
+      if (href) {
+        const a = document.createElement("a");
+        a.className = "topbar__crumb-link";
+        a.href = href;
+        a.textContent = text;
+        nav.appendChild(a);
+      } else {
+        const span = document.createElement("span");
+        span.className = "topbar__crumb-current";
+        span.textContent = text;
+        nav.appendChild(span);
+      }
+    });
+    host.removeAttribute("data-breadcrumb");
+  });
+}
+
 function initSidebarNavActive() {
   let p = location.pathname.replace(/\/index\.html$/i, "");
   if (p.length > 1 && p.endsWith("/")) p = p.slice(0, -1);
@@ -1165,6 +1212,7 @@ function initSidebarNavActive() {
 
 (async function startApp() {
   await loadHtmlPartials();
+  initTopbarBreadcrumbs();
   initSidebarNavActive();
   await initTagMeta();
   initTheme();

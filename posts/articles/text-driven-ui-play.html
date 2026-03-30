@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <script>
+      try {
+        var bootTheme = localStorage.getItem("theme");
+        if (bootTheme === "light" || bootTheme === "dark") document.documentElement.dataset.theme = bootTheme;
+      } catch (err) {}
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Getting started · Jason Wu</title>
+    <meta name="description" content="How this repo is organized and how to add posts." />
+    <link rel="stylesheet" href="/assets/css/style.css" />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <div class="app">
+      <aside class="sidebar" id="site-sidebar" aria-label="Sidebar" data-include="/assets/partials/sidebar.html"></aside>
+
+      <header class="topbar" aria-label="Top bar">
+        <div class="topbar__inner">
+          <div class="topbar__lead">
+            <div data-include="/assets/partials/topbar-menu.html"></div>
+            <div data-include="/assets/partials/topbar-crumb.html" data-breadcrumb='[{"text":"Home","href":"/"},{"text":"Posts","href":"/posts/"},{"text":"Text-driven UI play"}]'></div>
+          </div>
+          <div class="topbar__tools">
+            <div data-include="/assets/partials/topbar-theme.html"></div>
+            <div data-include="/assets/partials/topbar-search.html"></div>
+          </div>
+        </div>
+      </header>
+
+      <main id="main" class="main" tabindex="-1">
+        <div class="main-inner">
+          <article class="content" data-article>
+            <header class="post-header">
+              <h1 class="post-title">Getting started</h1>
+              <div class="post-meta">
+                <span class="pill">Mar 30, 2026</span>
+                <span class="pill">#tutorial</span>
+                <span class="pill">2 min</span>
+              </div>
+            </header>
+
+            <p>
+              This site is intentionally <strong>no-build</strong>: static HTML/CSS/JS that GitHub Pages can host.
+            </p>
+
+            <h2>Where things live</h2>
+            <ul>
+              <li><code>/index.html</code> is the homepage.</li>
+              <li><code>/posts/</code> holds post pages and the posts index.</li>
+              <li><code>/posts/posts.json</code> lists posts for the UI.</li>
+              <li><code>/assets/</code> has CSS/JS and images.</li>
+              <li><code>/assets/partials/</code> holds shared sidebar, topbar (menu, theme, search), and rail HTML; pages load them via <code>data-include</code> in <code>main.js</code>. Edit those files to change chrome site-wide. If you use VS Code Live Server, it can inject reload scripts into <code>.html</code> responses (even inside <code>&lt;svg&gt;</code>), which used to break partials; <code>main.js</code> strips that noise after fetch.</li>
+            </ul>
+
+            <h2>Add a new post</h2>
+            <ol>
+              <li>Create <code>/posts/your-slug.html</code> by copying an existing post (keep the <code>data-include</code> placeholders; only change head metadata, breadcrumb, and article body).</li>
+              <li>Add an entry to <code>/posts/posts.json</code>.</li>
+            </ol>
+          </article>
+
+          <aside class="rail" aria-label="Right rail" data-include="/assets/partials/rail-post.html"></aside>
+        </div>
+      </main>
+    </div>
+
+    <script src="/assets/js/main.js" defer></script>
+  </body>
+</html>
