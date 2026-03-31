@@ -483,7 +483,11 @@ async function loadPosts() {
 
 function fmtDate(iso) {
   try {
-    const d = new Date(iso);
+    const s = String(iso || "").trim();
+    // Date-only strings like "2026-03-30" are parsed as UTC by JS Date, which can display as the prior day in local timezones.
+    // Treat YYYY-MM-DD as a local calendar date.
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+    const d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(s);
     return new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short", day: "2-digit" }).format(d);
   } catch {
     return iso;
@@ -513,13 +517,14 @@ function renderPostCard(post) {
     meta.appendChild(date);
   }
 
-  const firstTag = getVisiblePostTags(post)[0];
-  if (firstTag) {
+  // Show up to 2 tags on cards (keeps layout compact, still informative).
+  const tags = getVisiblePostTags(post).slice(0, 2);
+  tags.forEach((t) => {
     const tag = document.createElement("span");
     tag.className = "pill";
-    tag.textContent = `#${firstTag}`;
+    tag.textContent = `#${t}`;
     meta.appendChild(tag);
-  }
+  });
 
   if (post.readingTime) {
     const rt = document.createElement("span");
@@ -588,7 +593,7 @@ async function initLatestPosts() {
     posts
       .slice()
       .sort((a, b) => (String(b.date || "")).localeCompare(String(a.date || "")))
-      .slice(0, 4)
+      .slice(0, 5)
       .forEach((p) => host.appendChild(renderPostCard(p)));
 
     if (!host.childElementCount) {
@@ -1059,6 +1064,13 @@ function initToc() {
     return;
   }
 
+  const setActiveHeading = (heading) => {
+    if (!heading) return;
+    items.forEach(({ div }) => div.classList.remove("toc__item--active"));
+    const hit = items.find((x) => x.h === heading);
+    if (hit) hit.div.classList.add("toc__item--active");
+  };
+
   const items = headings.map((h) => {
     const level = Number(h.tagName.slice(1));
     const a = document.createElement("a");
@@ -1068,16 +1080,31 @@ function initToc() {
     div.className = `toc__item toc__indent-${Math.min(4, level)}`;
     div.appendChild(a);
     host.appendChild(div);
+    a.addEventListener("click", () => {
+      // Update highlight immediately on click (before IO catches up).
+      setActiveHeading(h);
+      // If the browser scrolls after updating hash, IO will keep it in sync.
+      setTimeout(() => setActiveHeading(document.getElementById((location.hash || "").slice(1)) || h), 0);
+    });
     return { h, div };
+  });
+
+  // Initial highlight (e.g. deep-link / back-forward).
+  if (location.hash) {
+    const initial = document.getElementById(location.hash.slice(1));
+    if (initial) setActiveHeading(initial);
+  }
+
+  window.addEventListener("hashchange", () => {
+    const target = document.getElementById((location.hash || "").slice(1));
+    if (target) setActiveHeading(target);
   });
 
   const io = new IntersectionObserver(
     (entries) => {
       const visible = entries.filter((e) => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
       if (!visible) return;
-      items.forEach(({ div }) => div.classList.remove("toc__item--active"));
-      const hit = items.find((x) => x.h === visible.target);
-      if (hit) hit.div.classList.add("toc__item--active");
+      setActiveHeading(visible.target);
     },
     { rootMargin: "-20% 0px -70% 0px", threshold: [0.1, 0.2, 0.4, 0.6] }
   );

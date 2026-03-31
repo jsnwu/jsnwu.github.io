@@ -1,26 +1,18 @@
 [
   {
     "title": "Getting started",
-    "date": "2026-03-30",
+    "date": "2026-03-29",
     "tags": ["tutorial", "setup"],
     "readingTime": "2 min",
     "description": "How this repo is organized, and how to add posts without any build step.",
     "url": "/posts/articles/getting-started.html"
   },
   {
-    "title": "Text & typography",
-    "date": "2026-03-30",
-    "tags": ["demo", "typography"],
-    "readingTime": "3 min",
-    "description": "Examples for headings, lists, code blocks, and callouts.",
-    "url": "/posts/articles/text-and-typography.html"
-  },
-  {
     "title": "Text driven Web UI recorder and player",
     "date": "2026-03-30",
-    "tags": ["ui", "recorder", "player"],
+    "tags": ["ui recorder", "ui player", "text-driven"],
     "readingTime": "3 min",
-    "description": "A project to make web automation simplier for Dev&QAs",
+    "description": "A project to make quick web automation easier for Dev & QAs",
     "url": "/posts/articles/text-driven-ui-play.html"
   }
 ]

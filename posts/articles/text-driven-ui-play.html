@@ -10,8 +10,8 @@
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark light" />
-    <title>Getting started · Jason Wu</title>
-    <meta name="description" content="How this repo is organized and how to add posts." />
+    <title>Text-Driven UI Recorder/Player · Jason Wu</title>
+    <meta name="description" content="Turn plain-text steps into runnable Playwright tests with an interactive debug runner, discovery recorder, and fast page-object execution." />
     <link rel="stylesheet" href="/assets/css/style.css" />
     <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
   </head>
@@ -38,32 +38,97 @@
         <div class="main-inner">
           <article class="content" data-article>
             <header class="post-header">
-              <h1 class="post-title">Getting started</h1>
+              <h1 class="post-title">Text-Driven UI Recorder/Player (ui-play)</h1>
               <div class="post-meta">
                 <span class="pill">Mar 30, 2026</span>
-                <span class="pill">#tutorial</span>
-                <span class="pill">2 min</span>
+                <span class="pill">#ui recorder</span>
+                <span class="pill">#ui player</span>
+                <span class="pill">#text-driven</span>
+                <span class="pill">3 min</span>
               </div>
             </header>
-
+            <h2>Problem</h2>
             <p>
-              This site is intentionally <strong>no-build</strong>: static HTML/CSS/JS that GitHub Pages can host.
+              Using AI tool is a daily task for many developers and QAs. However, it is not easy to use Chrome or Playwright MCP to drive UI actions, due to two reasons: high
+              token usage and high latency. It takes long time for the AI to reason the intention of user actions, and need full page content and snapshots in context window. 
+              As a result, it's extreamly slow and costly to use AI to drive simple UI interactions.
             </p>
 
-            <h2>Where things live</h2>
+            <h2>Solution</h2>
+            <p>
+              <a href="https://github.com/jsnwu/ui-play"><strong>ui-play</strong></a> turns plain-text step lines into runnable UI tests. You can debug a flow step-by-step in a small web UI,
+              record stable locators during <strong>discovery</strong>, and then run established tests fast using page objects only.
+            </p>
+            <p>The best part is that it doesn't need tokens and it's really fast. It utilizes the locator resolver to quickly try out different locating strategies
+              to find the target element. It supports iframes, distinguish elements by index, and more.</p>
+            <p>
+              For many UI flows, the hard part isn’t “what to do” — it’s keeping locators stable and making iteration fast. ui-play focuses on a tight loop:
+              write steps in text, run/debug them interactively, record locators once, then execute reliably.
+            </p>
+
+            <h2>Flow (write → debug → discovery → run)</h2>
             <ul>
-              <li><code>/index.html</code> is the homepage.</li>
-              <li><code>/posts/</code> holds post pages and the posts index.</li>
-              <li><code>/posts/posts.json</code> lists posts for the UI.</li>
-              <li><code>/assets/</code> has CSS/JS and images.</li>
-              <li><code>/assets/partials/</code> holds shared sidebar, topbar (menu, theme, search), and rail HTML; pages load them via <code>data-include</code> in <code>main.js</code>. Edit those files to change chrome site-wide. If you use VS Code Live Server, it can inject reload scripts into <code>.html</code> responses (even inside <code>&lt;svg&gt;</code>), which used to break partials; <code>main.js</code> strips that noise after fetch.</li>
+              <li><strong>Write</strong>: steps are just lines (usually stored in YAML).</li>
+              <li><strong>Debug</strong>: interactive runner to run steps one-by-one, add/edit steps, set breakpoints, save.</li>
+              <li><strong>Discovery</strong>: executes steps in Playwright and records locators into a page object. If it succeeds, the test becomes “established”.</li>
+              <li><strong>Run</strong>: executes established tests using page objects only (fast and less flaky).</li>
             </ul>
 
-            <h2>Add a new post</h2>
-            <ol>
-              <li>Create <code>/posts/your-slug.html</code> by copying an existing post (keep the <code>data-include</code> placeholders; only change head metadata, breadcrumb, and article body).</li>
-              <li>Add an entry to <code>/posts/posts.json</code>.</li>
-            </ol>
+            <h2>Setup</h2>
+            <ul>
+              <li><strong>Install</strong>: <code>npm install</code></li>
+              <li><strong>Playwright</strong>: <code>npx playwright install</code></li>
+            </ul>
+
+            <h2>Common commands</h2>
+            <pre><code>
+# Create a test from step lines
+npm run uiplay -- init-test my-test "My flow" "Navigate to {{baseUrl}}"
+
+# Record/Update/Debug a test with UI debugger
+npm run uiplay:debug my-test
+
+# Discover mode (establish a test, sloidify locators into page object)
+npm run uiplay -- discovery my-test
+
+# Run an established test
+npm run uiplay -- run my-test
+            </code></pre>
+
+            <h2>Test case format (YAML)</h2>
+            <p>
+              Test cases live under <code>uiplay/tests/</code>. Variables like <code>{{baseUrl}}</code>, <code>{{env:VAR}}</code>, or per-test variables are substituted at runtime.
+            </p>
+            <pre><code>test_case:
+  id: my-test
+  title: My flow
+  established: false
+  baseUrl: "{{baseUrl}}"
+  env: {}
+  variables:
+    RUN_ID: "{{timestamp}}"
+    RANDOM_SUFFIX: "{{randomStr[6]}}"
+  actions:
+    - Navigate to {{baseUrl}}
+    - Click Sign in button
+    - Fill Email address with {{env:PLAYWRIGHT_LOGIN_EMAIL}}
+    - Fill Password with {{env:PLAYWRIGHT_LOGIN_PASSWORD}}
+    - Click Continue</code></pre>
+
+            <h2>Step keywords (examples)</h2>
+            <ul>
+              <li><code>Navigate to &lt;url&gt;</code></li>
+              <li><code>Click &lt;element&gt;</code></li>
+              <li><code>Fill &lt;element&gt; with &lt;value&gt;</code></li>
+              <li><code>Press &lt;key&gt;</code> (defaults to Enter)</li>
+              <li><code>Assert visible &lt;element&gt;</code></li>
+              <li><code>Pause for N seconds</code> / <code>Pause</code></li>
+            </ul>
+
+            <h2>Links</h2>
+            <ul>
+              <li><a href="https://github.com/jsnwu/ui-play">GitHub: jsnwu/ui-play</a></li>
+            </ul>
           </article>
 
           <aside class="rail" aria-label="Right rail" data-include="/assets/partials/rail-post.html"></aside>

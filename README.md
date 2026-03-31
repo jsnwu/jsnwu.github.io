@@ -1,5 +1,7 @@
 # jsnwu.github.io
 
+[Live](https://jsnwu.github.io/)
+
 Clean, no-build GitHub Pages site inspired by the Chirpy layout.
 
 ## Structure

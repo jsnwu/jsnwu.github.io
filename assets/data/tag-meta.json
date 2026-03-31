@@ -1,11 +1,14 @@
 {
   "123": {
-    "deleted": false,
+    "deleted": true,
     "color": "#84CC16"
   },
   "demo": {
     "hue": 1,
     "deleted": false,
     "color": "#3B82F6"
+  },
+  "ui": {
+    "color": "#F59E0B"
   }
 }
