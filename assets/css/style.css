@@ -478,6 +478,30 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   margin: 0;
 }
 
+.contact__grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.contact__grid .widget{
+  box-shadow: var(--shadow);
+  padding: 12px 14px;
+}
+.contact__grid .widget__title{
+  font-size: 14px;
+  letter-spacing: .2px;
+  text-transform: none;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.contact__grid .widget p{
+  margin: 0;
+}
+
+@media (max-width: 960px){
+  .contact__grid{ grid-template-columns: 1fr; }
+}
+
 .tag-cloud{ display:flex; flex-wrap: wrap; gap: 8px; }
 .tag{
   --tag-h: 210;
