@@ -458,6 +458,26 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   text-align: right;
 }
 
+.skills__grid{
+  display:flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.skills__grid .widget{
+  box-shadow: var(--shadow);
+  padding: 12px 14px;
+}
+.skills__grid .widget__title{
+  font-size: 14px;
+  letter-spacing: .2px;
+  text-transform: none;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+.skills__grid .widget p{
+  margin: 0;
+}
+
 .tag-cloud{ display:flex; flex-wrap: wrap; gap: 8px; }
 .tag{
   --tag-h: 210;
