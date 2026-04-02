@@ -458,24 +458,39 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   text-align: right;
 }
 
-.skills__grid{
+.skills__grid,
+.projects__grid{
   display:flex;
   flex-direction: column;
   gap: 14px;
 }
-.skills__grid .widget{
+.skills__grid .widget,
+.projects__grid .widget{
   box-shadow: var(--shadow);
   padding: 12px 14px;
 }
-.skills__grid .widget__title{
+.skills__grid .widget__title,
+.projects__grid .widget__title{
   font-size: 14px;
   letter-spacing: .2px;
   text-transform: none;
   color: var(--text);
   margin-bottom: 12px;
 }
-.skills__grid .widget p{
+.skills__grid .widget p,
+.projects__grid .widget p{
   margin: 0;
+}
+
+.projects__grid .project-shot{
+  margin: 12px 0 0;
+}
+.projects__grid .project-shot img{
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
 }
 
 .contact__grid{

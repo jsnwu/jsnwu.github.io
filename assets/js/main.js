@@ -1229,6 +1229,7 @@ function initSidebarNavActive() {
   let activeHref = null;
   if (p === "/about.html") activeHref = "/about.html";
   else if (p === "/tags" || p.startsWith("/tags/")) activeHref = "/tags/";
+  else if (p === "/projects" || p.startsWith("/projects/")) activeHref = "/projects/";
   else if (p === "/posts" || p.startsWith("/posts/")) activeHref = "/posts/";
   else if (p === "/") activeHref = "/";
   if (!activeHref) return;

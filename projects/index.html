@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <script>
+      try {
+        var bootTheme = localStorage.getItem("theme");
+        if (bootTheme === "light" || bootTheme === "dark") document.documentElement.dataset.theme = bootTheme;
+      } catch (err) {}
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Projects · Jason Wu</title>
+    <meta name="description" content="Selected projects and repositories." />
+    <link rel="stylesheet" href="/assets/css/style.css" />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <div class="app">
+      <aside class="sidebar" id="site-sidebar" aria-label="Sidebar" data-include="/assets/partials/sidebar.html"></aside>
+
+      <header class="topbar" aria-label="Top bar">
+        <div class="topbar__inner">
+          <div class="topbar__lead">
+            <div data-include="/assets/partials/topbar-menu.html"></div>
+            <div data-include="/assets/partials/topbar-crumb.html" data-breadcrumb='[{"text":"Home","href":"/"},{"text":"Projects"}]'></div>
+          </div>
+          <div class="topbar__tools">
+            <div data-include="/assets/partials/topbar-theme.html"></div>
+            <div data-include="/assets/partials/topbar-search.html"></div>
+          </div>
+        </div>
+      </header>
+
+      <main id="main" class="main" tabindex="-1">
+        <div class="main-inner">
+          <article class="content" data-article>
+            <header class="post-header">
+              <h1 class="post-title">Projects</h1>
+              <div class="post-meta">
+                <span class="pill">Open source</span>
+                <span class="pill">GitHub</span>
+                <span class="pill">Live demos</span>
+              </div>
+            </header>
+            <div class="projects__grid">
+              <section class="widget">
+                <h3 class="widget__title">ui-play</h3>
+                <p>
+                  <a href="https://github.com/jsnwu/ui-play">GitHub</a> — text-driven UI recorder/player built on Playwright.
+                </p>
+                <figure class="project-shot">
+                  <img
+                    src="/assets/img/ui-play-debug.png"
+                    width="1024"
+                    height="665"
+                    alt="ui-play debug UI with step table beside a browser running a DuckDuckGo search flow"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </figure>
+              </section>
+              <section class="widget">
+                <h3 class="widget__title">Slice Dice</h3>
+                <p>
+                  Pizza order and delivery web app (Next.js + Django): menu, cart, checkout, track order, and owner dashboard. —
+                  <a href="https://github.com/jsnwu/slice_dice">GitHub</a>
+                  ·
+                  <a href="http://sliced-alb16-pmze1cex8iax-1636331247.us-east-1.elb.amazonaws.com/menu" rel="noopener noreferrer">Live demo</a>
+                </p>
+                <figure class="project-shot">
+                  <img
+                    src="/assets/img/slice-dice-menu.jpg"
+                    width="1024"
+                    height="837"
+                    alt="Slice Dice menu page with category items and cart sidebar"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </figure>
+              </section>
+            </div>
+          </article>
+
+          <aside class="rail" aria-label="Right rail" data-include="/assets/partials/rail-default.html"></aside>
+        </div>
+      </main>
+    </div>
+
+    <script src="/assets/js/main.js" defer></script>
+  </body>
+</html>
