@@ -18,13 +18,15 @@
   --ring: 0 0 0 3px rgba(125, 211, 252, .22);
   --radius: 14px;
   --radius-sm: 10px;
-  --content-max: 860px;
+  --article-content-max: 860px;
+  --content-max: var(--article-content-max);
   --layout-pad-x: 32px;
   --rail-w: 300px;
   --rail-gap: 32px;
   --main-inner-max: calc(var(--content-max) + var(--rail-w) + var(--rail-gap));
-  --sidebar-w: 268px;
+  --sidebar-w-expanded: 268px;
   --sidebar-w-collapsed: 72px;
+  --sidebar-w: var(--sidebar-w-expanded);
   --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
@@ -273,6 +275,11 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
 @media (min-width: 821px){
   html[data-sidebar-collapsed="true"]{
     --sidebar-w: var(--sidebar-w-collapsed);
+    /* Widen article + topbar cap by the horizontal space freed from the narrow rail. */
+    --content-max: calc(
+      var(--article-content-max) + var(--sidebar-w-expanded) - var(--sidebar-w-collapsed)
+    );
+    --main-inner-max: calc(var(--content-max) + var(--rail-w) + var(--rail-gap));
   }
   html[data-sidebar-collapsed="true"] .sidebar{
     padding: 12px 8px;
