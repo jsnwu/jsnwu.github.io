@@ -625,8 +625,8 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   gap: 12px;
 }
 .contact__grid .widget{
-  box-shadow: var(--shadow);
   padding: 12px 14px;
+  border: none;
 }
 .contact__grid .widget__title{
   font-size: 14px;
@@ -637,6 +637,14 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
 }
 .contact__grid .widget p{
   margin: 0;
+}
+
+/*
+  Opt-in flat tiles: no shadow / elevation. Use on specific .widget cells only, e.g. class="widget widget--flat".
+  Placed after .skills__grid .widget / .projects__grid .widget so it wins when combined on the same element.
+*/
+.widget.widget--flat{
+  box-shadow: none;
 }
 
 @media (max-width: 960px){
