@@ -56,11 +56,11 @@
                 <span class="pill">5 min</span>
               </div>
             </header>
-
+            <h2>Intro</h2>
             <p>
               Created a web app <a href="https://github.com/jsnwu/slice_dice">Slice Dice delivery</a> recently, it works perfectly locally inside docker containers. 
               Deploying to a remote enviroment will be the next step. AWS ECS will be a good choice since I've been using it on daily basis at work. AWS CDK can make the task a breeze,
-              the infrastructure code is the way to go to avoid all manual configurations and headaches.
+              the infrastructure as code is the way to go to avoid all manual configurations and headaches.
 
               AWS CDK is similar to Terraform, but has typescript support. Instead of learning a new language(HCL), I can use my favorite language to write the infrastructure code with less friction.          
               The app is a simple one-page web app, one service runs two containers: Next.js on port 3000 and Django on 8000. The ALB sends
@@ -95,7 +95,7 @@
               <code>AlbHttpsUrl</code> when TLS is wired, cluster and service names for later operations, and the ECR URIs.
             </p>
 
-            <h2>Postgres</h2>
+            <h2>Postgres RDS</h2>
             <p>
               The backend expects standard Django/Postgres variables (<code>POSTGRES_DB</code>, <code>POSTGRES_USER</code>, <code>DJANGO_SECRET_KEY</code>, and either in-VPC RDS from the stack or an
               external host plus password/secret). To let CDK provision a small RDS instance, use <code>npm run rds-deploy</code>, set <code>CDK_PROVISION_RDS=true</code> in

@@ -618,12 +618,25 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
 .projects__grid .project-shot{
   margin: 12px 0 0;
 }
+.projects__grid .project-shot__link{
+  display: block;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: inherit;
+}
+.projects__grid .project-shot__link:focus-visible{
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
 .projects__grid .project-shot img{
   display: block;
   width: 100%;
   height: auto;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
+}
+.projects__grid .project-shot__link:hover img{
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
 }
 
 .contact__grid{
