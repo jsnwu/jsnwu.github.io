@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <script>
+      try {
+        var bootTheme = localStorage.getItem("theme");
+        if (bootTheme === "light" || bootTheme === "dark") document.documentElement.dataset.theme = bootTheme;
+        if (localStorage.getItem("siteSidebarCollapsed") === "1") document.documentElement.dataset.sidebarCollapsed = "true";
+      } catch (err) {}
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Shipping Django and Next.js Web App to ECS Fargate · Jason Wu</title>
+    <meta
+      name="description"
+      content="Shipping Django and Next.js Web App to ECS Fargate behind an ALB using AWS CDK—ECR, deploy paths, HTTPS, and Postgres."
+    />
+    <link rel="stylesheet" href="/assets/css/style.css" />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <div class="app">
+      <aside class="sidebar" id="site-sidebar" aria-label="Sidebar" data-include="/assets/partials/sidebar.html"></aside>
+
+      <header class="topbar" aria-label="Top bar">
+        <div class="topbar__inner">
+          <div class="topbar__lead">
+            <div data-include="/assets/partials/topbar-menu.html"></div>
+            <div
+              data-include="/assets/partials/topbar-crumb.html"
+              data-breadcrumb='[{"text":"Home","href":"/"},{"text":"Posts","href":"/posts/"},{"text":"Slice Dice on AWS CDK"}]'
+            ></div>
+          </div>
+          <div class="topbar__tools">
+            <div data-include="/assets/partials/topbar-theme.html"></div>
+            <div data-include="/assets/partials/topbar-search.html"></div>
+          </div>
+        </div>
+      </header>
+
+      <main id="main" class="main" tabindex="-1">
+        <div class="main-inner">
+          <article class="content" data-article>
+            <header class="post-header">
+              <h1 class="post-title">Shipping Django and Next.js Web App to ECS Fargate</h1>
+              <div class="post-meta">
+                <span class="pill">Apr 2, 2026</span>
+                <span class="pill">#AWS</span>
+                <span class="pill">#CDK</span>
+                <span class="pill">#ECS</span>
+                <span class="pill">#Next.js</span>
+                <span class="pill">#Django</span>
+                <span class="pill">5 min</span>
+              </div>
+            </header>
+
+            <p>
+              Created a web app <a href="https://github.com/jsnwu/slice_dice">Slice Dice delivery</a> recently, it works perfectly locally inside docker containers. 
+              Deploying to a remote enviroment will be the next step. AWS ECS will be a good choice since I've been using it on daily basis at work. AWS CDK can make the task a breeze,
+              the infrastructure code is the way to go to avoid all manual configurations and headaches.
+
+              AWS CDK is similar to Terraform, but has typescript support. Instead of learning a new language(HCL), I can use my favorite language to write the infrastructure code with less friction.          
+              The app is a simple one-page web app, one service runs two containers: Next.js on port 3000 and Django on 8000. The ALB sends
+              <code>/api/*</code> to the API and everything else to the frontend—no extra reverse proxy in the cluster.
+            </p>
+
+            <h2>Before you deploy</h2>
+            <p>
+              You need Node/npm for the CDK package, AWS credentials (<code>aws configure</code> or SSO), and a one-time <code>npx cdk bootstrap</code> per account and region. Optional
+              settings for the stack are loaded from <code>.env</code> when present.
+            </p>
+            <pre class="pre--dedent">
+              <code>
+                npm install -g aws-cdk
+                aws configure
+                npx cdk bootstrap
+                npm install
+              </code>
+            </pre>
+
+            <h2>Images and ECR</h2>
+            <p>
+              The stack <em>references</em> ECR repos named <code>slice-dice-frontend</code> and <code>slice-dice-backend</code> but does not create them, so redeploys are not blocked by “repository
+              already exists.” Create the repos once if needed, or from the repository root run the bundled ECR script that lives under <code>infra</code> (optionally with region and tags). From the
+              same package directory where you run <code>npm install</code>, <code>npm run ecr-deploy</code> does the same job.
+            </p>
+
+            <h2>First stack deploy</h2>
+            <p>
+              In the <code>infra</code> directory that contains the stack’s <code>package.json</code>, run <code>npm install</code>, then <code>bash scripts/deploy.sh</code> (ensures the ECS log group exists, builds, and runs
+              <code>cdk deploy</code>) or invoke <code>npx cdk deploy SliceDiceFargateStack</code> directly. CloudFormation outputs worth noting include <code>AlbDnsName</code>,
+              <code>AlbHttpsUrl</code> when TLS is wired, cluster and service names for later operations, and the ECR URIs.
+            </p>
+
+            <h2>Postgres</h2>
+            <p>
+              The backend expects standard Django/Postgres variables (<code>POSTGRES_DB</code>, <code>POSTGRES_USER</code>, <code>DJANGO_SECRET_KEY</code>, and either in-VPC RDS from the stack or an
+              external host plus password/secret). To let CDK provision a small RDS instance, use <code>npm run rds-deploy</code>, set <code>CDK_PROVISION_RDS=true</code> in
+              <code>infra/.env</code>, or run <code>CDK_PROVISION_RDS=true bash scripts/deploy.sh</code>. For an external database, leave that unset and configure <code>POSTGRES_HOST</code> and
+              credentials in env or Secrets Manager as documented in the project.
+            </p>
+            <p>
+              Once the DB is reachable from the tasks, <code>bash scripts/run-migrate-seed.sh</code> runs Django <code>migrate</code> and <code>seed_demo</code> as a one-off Fargate task; add
+              <code>--migrate-only</code> to skip seeding. Backup retention defaults to 0 for Free Tier–friendly RDS; raise <code>RDS_BACKUP_RETENTION_DAYS</code> on a paid account when you want
+              real retention.
+            </p>            
+
+            <h2>Healthy behind the load balancer</h2>
+            <p>
+              Once tasks are running, the ECS service view ties each container port to an ALB target group. Both the Next.js task (<code>frontend:3000</code>) and the Django API
+              (<code>backend:8000</code>) should register as healthy; CPU and memory charts stay modest for a quiet workload.
+            </p>
+            <figure class="article-figure">
+              <img
+                src="/assets/img/articles/slice-dice-aws-cdk/slice-dice-ecs-health.png"
+                alt="AWS console: load balancer target health for frontend port 3000 and backend port 8000, both healthy, with CPU and memory utilization graphs over time."
+              />
+              <figcaption>ALB target health and utilization for the Slice Dice Fargate service.</figcaption>
+            </figure>
+
+
+            <h2>The App is live</h2>
+            <p>Once the deployment is completed and the health check is green, the app is live and ready to use.</p>
+            <figure class="article-figure">
+              <img
+                src="/assets/img/articles/slice-dice-aws-cdk/slice-dice-app-live.png"
+                alt="Slice Dice menu page: classic pizzas with add-to-cart cards and a cart sidebar listing items, quantities, total, and checkout."
+              />
+              <figcaption>Live app: menu and cart after deploy behind the ALB.</figcaption>
+              <a href="http://sliced-alb16-pmze1cex8iax-1636331247.us-east-1.elb.amazonaws.com/menu" rel="noopener noreferrer">Slice Dice Live Website</a>
+            </figure>
+
+
+            <h2>Shipping new container builds</h2>
+            <p>
+              After you push new <code>:latest</code> images, <code>npm run ecs-force</code> or <code>bash scripts/deploy-ecs-force.sh</code> forces ECS to roll tasks and pull fresh images
+              without touching CloudFormation. If you change CPU, memory, environment, or container definitions, you need a full <code>cdk deploy</code> / <code>deploy.sh</code> again—not only a
+              force rollout.
+            </p>
+
+            <h2>When a deploy fails</h2>
+            <p>
+              A stack stuck in <code>ROLLBACK_COMPLETE</code> has to be deleted in CloudFormation (or via a cleanup script such as <code>scripts/delete-ecs.sh</code>, after confirming stack name
+              and region) before you can deploy again.
+            </p>
+          </article>
+
+          <aside class="rail" aria-label="Right rail" data-include="/assets/partials/rail-post.html"></aside>
+        </div>
+      </main>
+    </div>
+
+    <script src="/assets/js/main.js" defer></script>
+  </body>
+</html>

@@ -696,7 +696,10 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
 .toc__indent-3{ padding-left: 28px; }
 
 /* Make the entire TOC row clickable (not just text). */
-.toc__item{ padding: 0; }
+.toc__item{
+  padding: 0;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
 .toc__item > a{
   display: block;
   width: 100%;
@@ -786,6 +789,37 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   overflow:auto;
 }
 .content pre code{ background: transparent; border: 0; padding: 0; }
+
+/*
+  Article <pre> with pretty-printed <code>: add class="pre--dedent" on <pre>.
+  main.js strips common leading whitespace per line (keeps relative indent for YAML, etc.),
+  trims ends, and removes whitespace-only nodes around <code>. Use white-space: pre on code.
+*/
+.content[data-article] pre.pre--dedent{
+  margin: 12px 0;
+}
+.content[data-article] pre.pre--dedent > code{
+  display: block;
+  white-space: pre;
+  text-align: left;
+}
+.content[data-article] figure.article-figure{
+  margin: 16px 0;
+}
+.content[data-article] figure.article-figure img{
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.content[data-article] figure.article-figure figcaption{
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.45;
+}
 
 .post-header{
   display:flex;

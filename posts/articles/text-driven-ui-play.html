@@ -82,39 +82,42 @@
             </ul>
 
             <h2>Common commands</h2>
-            <pre><code>
-# Create a test from step lines
-npm run uiplay -- init-test my-test "My flow" "Navigate to {{baseUrl}}"
+            <pre class="pre--dedent"><code>
+              # Create a test from step lines
+              npm run uiplay -- init-test my-test "My flow" "Navigate to {{baseUrl}}"
 
-# Record/Update/Debug a test with UI debugger
-npm run uiplay:debug my-test
+              # Record/Update/Debug a test with UI debugger
+              npm run uiplay:debug my-test
 
-# Discover mode (establish a test, sloidify locators into page object)
-npm run uiplay -- discovery my-test
+              # Discover mode (establish a test, sloidify locators into page object)
+              npm run uiplay -- discovery my-test
 
-# Run an established test
-npm run uiplay -- run my-test
+              # Run an established test
+              npm run uiplay -- run my-test
             </code></pre>
 
             <h2>Test case format (YAML)</h2>
             <p>
               Test cases live under <code>uiplay/tests/</code>. Variables like <code>{{baseUrl}}</code>, <code>{{env:VAR}}</code>, or per-test variables are substituted at runtime.
             </p>
-            <pre><code>test_case:
-  id: my-test
-  title: My flow
-  established: false
-  baseUrl: "{{baseUrl}}"
-  env: {}
-  variables:
-    RUN_ID: "{{timestamp}}"
-    RANDOM_SUFFIX: "{{randomStr[6]}}"
-  actions:
-    - Navigate to {{baseUrl}}
-    - Click Sign in button
-    - Fill Email address with {{env:PLAYWRIGHT_LOGIN_EMAIL}}
-    - Fill Password with {{env:PLAYWRIGHT_LOGIN_PASSWORD}}
-    - Click Continue</code></pre>
+            <pre class="pre--dedent"><code>
+              test_case:
+                id: my-test
+                title: My flow
+                established: false
+                baseUrl: "{{baseUrl}}"
+                env: {}
+                variables:
+                  RUN_ID: "{{timestamp}}"
+                  RANDOM_SUFFIX: "{{randomStr[6]}}"
+                actions:
+                  - Navigate to {{baseUrl}}
+                  - Click Sign in button
+                  - Fill Email address with {{env:PLAYWRIGHT_LOGIN_EMAIL}}
+                  - Fill Password with {{env:PLAYWRIGHT_LOGIN_PASSWORD}}
+                  - Click Continue
+            </code></pre>
+            
 
             <h2>Step keywords (examples)</h2>
             <ul>

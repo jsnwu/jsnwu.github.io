@@ -1102,6 +1102,15 @@ function initToc() {
     if (hit) hit.div.classList.add("toc__item--active");
   };
 
+  /** After a TOC/hash jump, scrollspy used to run before layout settled and overwrote the clicked row. */
+  let tocUserPick = null;
+  let tocUserPickExpire = 0;
+  const TOC_USER_PICK_MS = 500;
+  const lockTocToHeading = (heading) => {
+    tocUserPick = heading;
+    tocUserPickExpire = performance.now() + TOC_USER_PICK_MS;
+  };
+
   const items = headings.map((h) => {
     const level = Number(h.tagName.slice(1));
     const a = document.createElement("a");
@@ -1112,35 +1121,108 @@ function initToc() {
     div.appendChild(a);
     host.appendChild(div);
     a.addEventListener("click", () => {
-      // Update highlight immediately on click (before IO catches up).
+      lockTocToHeading(h);
       setActiveHeading(h);
-      // If the browser scrolls after updating hash, IO will keep it in sync.
-      setTimeout(() => setActiveHeading(document.getElementById((location.hash || "").slice(1)) || h), 0);
     });
     return { h, div };
   });
 
-  // Initial highlight (e.g. deep-link / back-forward).
-  if (location.hash) {
-    const initial = document.getElementById(location.hash.slice(1));
-    if (initial) setActiveHeading(initial);
-  }
+  const syncTocHighlight = () => {
+    if (!headings.length) return;
+    if (tocUserPick && performance.now() < tocUserPickExpire) {
+      setActiveHeading(tocUserPick);
+      return;
+    }
+    tocUserPick = null;
+
+    const threshold = Math.max(72, window.innerHeight * 0.2);
+    const scrollY = window.scrollY;
+    const vh = window.innerHeight;
+    const scrollBottom = scrollY + vh;
+    const docHeight = Math.max(
+      document.documentElement.scrollHeight,
+      document.body?.scrollHeight || 0
+    );
+
+    const last = headings[headings.length - 1];
+    const lastIdx = headings.length - 1;
+
+    if (scrollBottom >= docHeight - 16) {
+      setActiveHeading(last);
+      return;
+    }
+
+    // End of article: last N sections are often short and stacked; threshold-based spy skips rows.
+    // Map scroll progress from the start of the tail block to max scroll → one TOC step per band.
+    const TOC_TAIL_STEP_COUNT = 3;
+    const useTailSteps = headings.length >= TOC_TAIL_STEP_COUNT + 2;
+    if (useTailSteps) {
+      const tailFirstIndex = headings.length - TOC_TAIL_STEP_COUNT;
+      const tailFirst = headings[tailFirstIndex];
+      const tailDocTop = tailFirst.getBoundingClientRect().top + scrollY;
+      const scrollMax = Math.max(0, docHeight - vh);
+      if (scrollY >= tailDocTop - 1) {
+        const span = Math.max(1, scrollMax - tailDocTop);
+        let t = (scrollY - tailDocTop) / span;
+        if (t < 0) t = 0;
+        if (t > 1) t = 1;
+        const step = Math.min(
+          TOC_TAIL_STEP_COUNT - 1,
+          Math.floor(t * TOC_TAIL_STEP_COUNT + 1e-9)
+        );
+        setActiveHeading(headings[tailFirstIndex + step]);
+        return;
+      }
+    }
+
+    let active = headings[0];
+    for (const h of headings) {
+      if (h.getBoundingClientRect().top <= threshold) active = h;
+    }
+
+    setActiveHeading(active);
+  };
+
+  let tocScrollTicking = false;
+  const scheduleTocSync = () => {
+    if (tocScrollTicking) return;
+    tocScrollTicking = true;
+    requestAnimationFrame(() => {
+      tocScrollTicking = false;
+      syncTocHighlight();
+    });
+  };
+
+  window.addEventListener("scroll", scheduleTocSync, { passive: true });
+  window.addEventListener("resize", scheduleTocSync);
 
   window.addEventListener("hashchange", () => {
-    const target = document.getElementById((location.hash || "").slice(1));
-    if (target) setActiveHeading(target);
+    const id = decodeURIComponent((location.hash || "").slice(1));
+    if (id) {
+      const h = headings.find((el) => el.id === id);
+      if (h) {
+        lockTocToHeading(h);
+        setActiveHeading(h);
+      }
+    }
+    requestAnimationFrame(() => {
+      requestAnimationFrame(syncTocHighlight);
+    });
   });
 
-  const io = new IntersectionObserver(
-    (entries) => {
-      const visible = entries.filter((e) => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-      if (!visible) return;
-      setActiveHeading(visible.target);
-    },
-    { rootMargin: "-20% 0px -70% 0px", threshold: [0.1, 0.2, 0.4, 0.6] }
-  );
-
-  headings.forEach((h) => io.observe(h));
+  if (location.hash) {
+    const id = decodeURIComponent(location.hash.slice(1));
+    const h = id && headings.find((el) => el.id === id);
+    if (h) {
+      lockTocToHeading(h);
+      setActiveHeading(h);
+    }
+    requestAnimationFrame(() => {
+      requestAnimationFrame(syncTocHighlight);
+    });
+  } else {
+    syncTocHighlight();
+  }
 }
 
 /** Map /assets/... and /posts/... to the correct origin when the site is under a subpath (e.g. GitHub Project Pages). */
@@ -1252,6 +1334,41 @@ function initTopbarBreadcrumbs() {
   });
 }
 
+/** Remove the longest common leading whitespace from every non-empty line (preserves relative indent, e.g. YAML). */
+function dedentCommonLeadingWhitespace(s) {
+  const t = String(s).replace(/\r\n/g, "\n");
+  const lines = t.split("\n");
+  const nonempty = lines.filter((line) => line.trim().length > 0);
+  if (nonempty.length === 0) return t.trim();
+
+  let minIndent = Infinity;
+  for (const line of nonempty) {
+    const leadLen = /^[ \t]*/.exec(line)[0].length;
+    minIndent = Math.min(minIndent, leadLen);
+  }
+  if (minIndent === 0 || minIndent === Infinity) return t.trim();
+
+  const dedented = lines.map((line) => {
+    if (line.trim() === "") return "";
+    const leadLen = /^[ \t]*/.exec(line)[0].length;
+    if (leadLen >= minIndent) return line.slice(minIndent);
+    return line.trimStart();
+  });
+  return dedented.join("\n").trim();
+}
+
+function initArticlePreDedents() {
+  document.querySelectorAll(".content[data-article] pre.pre--dedent").forEach((pre) => {
+    const code = pre.querySelector(":scope > code");
+    if (!code) return;
+    const raw = String(code.textContent || "");
+    const next = dedentCommonLeadingWhitespace(raw);
+    if (next !== raw) code.textContent = next;
+    // Drop whitespace-only text nodes between <pre> and <code> (they render as extra lines in <pre>).
+    pre.replaceChildren(code);
+  });
+}
+
 function initSidebarNavActive() {
   let p = location.pathname.replace(/\/index\.html$/i, "");
   if (p.length > 1 && p.endsWith("/")) p = p.slice(0, -1);
@@ -1271,6 +1388,7 @@ function initSidebarNavActive() {
 
 (async function startApp() {
   await loadHtmlPartials();
+  initArticlePreDedents();
   initTopbarBreadcrumbs();
   initSidebarNavActive();
   await initTagMeta();
