@@ -1,5 +1,6 @@
 /** Must stay in sync with the inline <script> in each page <head> (early theme, avoids flash). */
 const THEME_KEY = "theme";
+const SIDEBAR_COLLAPSED_KEY = "siteSidebarCollapsed";
 const TAG_META_URL = "/assets/data/tag-meta.json";
 const LEGACY_TAG_META_KEY = "tagMetaV1";
 const TAG_META_IDB = "site-tag-meta";
@@ -471,6 +472,36 @@ function initSidebarToggle() {
     mobileNavMq.addListener(closeOverlayIfDesktop);
   }
   closeOverlayIfDesktop();
+}
+
+function initSidebarCollapse() {
+  const btn = document.querySelector("[data-sidebar-collapse]");
+  if (!btn) return;
+
+  const icon = btn.querySelector("[data-sidebar-collapse-icon]");
+
+  const root = document.documentElement;
+  const apply = (collapsed) => {
+    if (collapsed) root.dataset.sidebarCollapsed = "true";
+    else delete root.dataset.sidebarCollapsed;
+    btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    btn.setAttribute("aria-label", collapsed ? "Expand sidebar" : "Collapse sidebar");
+    btn.setAttribute("title", collapsed ? "Expand sidebar" : "Collapse sidebar");
+    if (icon) icon.textContent = collapsed ? "»" : "«";
+    try {
+      if (collapsed) localStorage.setItem(SIDEBAR_COLLAPSED_KEY, "1");
+      else localStorage.removeItem(SIDEBAR_COLLAPSED_KEY);
+    } catch {}
+  };
+
+  try {
+    if (localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1") apply(true);
+  } catch {}
+
+  btn.addEventListener("click", () => {
+    const next = root.dataset.sidebarCollapsed !== "true";
+    apply(next);
+  });
 }
 
 async function loadPosts() {
@@ -1246,6 +1277,7 @@ function initSidebarNavActive() {
   initTheme();
   wireThemeButtons();
   initSidebarToggle();
+  initSidebarCollapse();
   initPostsSearchNavigateFromOtherPages();
   initLatestPosts();
   initPostsIndex();

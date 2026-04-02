@@ -23,6 +23,8 @@
   --rail-w: 300px;
   --rail-gap: 32px;
   --main-inner-max: calc(var(--content-max) + var(--rail-w) + var(--rail-gap));
+  --sidebar-w: 268px;
+  --sidebar-w-collapsed: 72px;
   --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
@@ -73,11 +75,16 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
 .app{
   min-height: 100vh;
   display:grid;
-  grid-template-columns: 268px 1fr;
+  grid-template-columns: var(--sidebar-w) 1fr;
   grid-template-rows: auto 1fr;
   grid-template-areas:
     "sidebar topbar"
     "sidebar main";
+}
+@media (min-width: 821px){
+  .app{
+    transition: grid-template-columns 0.24s ease;
+  }
 }
 
 .sidebar{
@@ -92,6 +99,13 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   flex-direction: column;
   gap: 0;
   min-height: 0;
+  /*
+    Collapse-handle vertical position: `top` on .sidebar__collapseDock (absolute in this rail).
+    `%` is relative to sidebar height (full column ≈ viewport). Examples: 50%, 12%, 120px.
+  */
+  --sidebar-collapse-top: 10%;
+  /* Collapsed rail only: space above nav links (independent of --sidebar-collapse-top). */
+  --sidebar-collapsed-nav-pad-top: 45px;
 }
 /* One injected wrapper: real flex column (avoid display:contents quirks in some engines). */
 .sidebar__chunk{
@@ -169,12 +183,12 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   min-width: 0;
 }
 .nav__icon{
-  width: 16px;
-  height: 16px;
-  flex: 0 0 16px;
+  width: calc(16px * 1.15);
+  height: calc(16px * 1.15);
+  flex: 0 0 calc(16px * 1.15);
   display: block;
   object-fit: contain;
-  opacity: 0.55;
+  opacity: 0.82;
 }
 .nav__item:hover .nav__icon,
 .nav__item--active .nav__icon{
@@ -192,6 +206,61 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   border-color: var(--border);
 }
 
+/* Out of document flow: straddles sidebar/main border; stays on the rail edge during grid width transition. */
+.sidebar__collapseDock{
+  position: absolute;
+  top: var(--sidebar-collapse-top);
+  right: 0;
+  transform: translate(50%, -50%);
+  width: 0;
+  height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 35;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  pointer-events: none;
+}
+.sidebar__collapseDock .sidebar__collapse{
+  pointer-events: none;
+}
+.sidebar:hover .sidebar__collapseDock,
+.sidebar__collapseDock:focus-within{
+  opacity: 1;
+  pointer-events: auto;
+}
+.sidebar:hover .sidebar__collapseDock .sidebar__collapse,
+.sidebar__collapseDock:focus-within .sidebar__collapse{
+  pointer-events: auto;
+}
+.sidebar__collapse{
+  box-sizing: border-box;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  line-height: 1;
+  letter-spacing: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--sidebar-bg);
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.22);
+}
+:root[data-theme="light"] .sidebar__collapse{
+  box-shadow: 0 2px 14px rgba(10, 20, 40, 0.12);
+}
+.button.sidebar__collapse:hover{
+  background: color-mix(in srgb, var(--sidebar-bg) 82%, var(--surface));
+  border-color: var(--border);
+  color: var(--text);
+}
 .sidebar__footer{
   flex-shrink: 0;
   margin-top: auto;
@@ -199,6 +268,63 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   flex-direction: column;
   gap: 10px;
   padding: 6px;
+}
+
+@media (min-width: 821px){
+  html[data-sidebar-collapsed="true"]{
+    --sidebar-w: var(--sidebar-w-collapsed);
+  }
+  html[data-sidebar-collapsed="true"] .sidebar{
+    padding: 12px 8px;
+  }
+  html[data-sidebar-collapsed="true"] .sidebar__brand{
+    padding: 8px 4px 6px;
+  }
+  html[data-sidebar-collapsed="true"] .sidebar__brandRow{
+    display: none;
+  }
+  html[data-sidebar-collapsed="true"] .brand__right{
+    margin-bottom: 6px;
+  }
+  html[data-sidebar-collapsed="true"] .brand__logo{
+    height: 44px;
+    border-radius: 12px;
+  }
+  html[data-sidebar-collapsed="true"] .nav{
+    gap: 6px;
+    padding: var(--sidebar-collapsed-nav-pad-top) 2px 0;
+  }
+  html[data-sidebar-collapsed="true"] .nav__item{
+    justify-content: center;
+    gap: 0;
+    padding: 10px 8px;
+  }
+  html[data-sidebar-collapsed="true"] .nav__item > span{
+    display: none;
+  }
+  html[data-sidebar-collapsed="true"] .nav__icon{
+    width: calc(20px * 1.15);
+    height: calc(20px * 1.15);
+    flex: 0 0 calc(20px * 1.15);
+  }
+  html[data-sidebar-collapsed="true"] .sidebar__collapse{
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+    font-size: 14px;
+  }
+  html[data-sidebar-collapsed="true"] .sidebar__footer .button__text{
+    display: none;
+  }
+  html[data-sidebar-collapsed="true"] .sidebar__footer .button[data-theme-toggle]{
+    justify-content: center;
+    width: 100%;
+    min-height: 40px;
+  }
+  html[data-sidebar-collapsed="true"] .sidebar__footer .muted{
+    display: none;
+  }
 }
 
 .topbar{
@@ -803,6 +929,9 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
 }
 
 @media (max-width: 820px){
+  .sidebar__collapseDock{
+    display: none;
+  }
   :root{
     --layout-pad-x: 20px;
     --rail-gap: 20px;

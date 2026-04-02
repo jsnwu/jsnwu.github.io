@@ -12,29 +12,29 @@
     </div>
   </div>
   <nav class="nav" aria-label="Primary">
-    <a class="nav__item" href="/">
-      <img class="nav__icon" src="/assets/icons/nav-home.svg" alt="" width="16" height="16" />
+    <a class="nav__item" href="/" aria-label="Home">
+      <img class="nav__icon" src="/assets/icons/nav-home.svg" alt="" width="18" height="18" />
       <span>Home</span>
     </a>
-    <a class="nav__item" href="/posts/">
-      <img class="nav__icon" src="/assets/icons/nav-posts.svg" alt="" width="16" height="16" />
+    <a class="nav__item" href="/posts/" aria-label="Posts">
+      <img class="nav__icon" src="/assets/icons/nav-posts.svg" alt="" width="18" height="18" />
       <span>Posts</span>
     </a>
-    <a class="nav__item" href="/projects/">
-      <img class="nav__icon" src="/assets/icons/nav-projects.svg" alt="" width="16" height="16" />
+    <a class="nav__item" href="/projects/" aria-label="Projects">
+      <img class="nav__icon" src="/assets/icons/nav-projects.svg" alt="" width="18" height="18" />
       <span>Projects</span>
     </a>
-    <a class="nav__item" href="/tags/">
-      <img class="nav__icon" src="/assets/icons/nav-tags.svg" alt="" width="16" height="16" />
+    <a class="nav__item" href="/tags/" aria-label="Tags">
+      <img class="nav__icon" src="/assets/icons/nav-tags.svg" alt="" width="18" height="18" />
       <span>Tags</span>
     </a>
-    <a class="nav__item" href="/about.html">
-      <img class="nav__icon" src="/assets/icons/nav-about.svg" alt="" width="16" height="16" />
+    <a class="nav__item" href="/about.html" aria-label="About">
+      <img class="nav__icon" src="/assets/icons/nav-about.svg" alt="" width="18" height="18" />
       <span>About</span>
     </a>
   </nav>
   <div class="sidebar__footer">
-    <button class="button button--ghost" type="button" data-theme-toggle>
+    <button class="button button--ghost" type="button" data-theme-toggle aria-label="Toggle color theme">
       <span class="button__icon" aria-hidden="true">◐</span>
       <span class="button__text" data-theme-label>Theme</span>
     </button>
@@ -42,4 +42,17 @@
       <span id="year"></span> · <a href="https://github.com/jsnwu">GitHub</a>
     </div>
   </div>
+</div>
+<div class="sidebar__collapseDock">
+  <button
+    class="button button--ghost sidebar__collapse"
+    type="button"
+    data-sidebar-collapse
+    aria-expanded="true"
+    aria-controls="site-sidebar"
+    aria-label="Collapse sidebar"
+    title="Collapse sidebar"
+  >
+    <span data-sidebar-collapse-icon aria-hidden="true">«</span>
+  </button>
 </div>
