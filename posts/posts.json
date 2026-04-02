@@ -1,10 +1,10 @@
 [
   {
-    "title": "Deploying Django and Next.js Web App with AWS CDK",
+    "title": "Deploying Next.js & Django Web App with AWS CDK",
     "date": "2026-04-02",
-    "tags": ["aws", "cdk", "ecs", "nexst-js", "django", "deployment"],
+    "tags": ["aws", "cdk", "ecs", "nexst-js", "django", "typescript", "deployment"],
     "readingTime": "5 min",
-    "description": "Deploy Django and Next.js Web App to ECS Fargate behind an ALB, the AWS CDK can make it a task of breeze",
+    "description": "Deploy Next.js & Django Web App to ECS Fargate behind an ALB, the AWS CDK can make it a task of breeze",
     "url": "/posts/articles/slice-dice-aws-cdk.html"
   },
   {
@@ -18,7 +18,7 @@
   {
     "title": "Text driven Web UI recorder and player",
     "date": "2026-03-30",
-    "tags": ["ui recorder", "ui player", "text-driven"],
+    "tags": ["ui recorder", "ui player", "text-driven", "typescript"],
     "readingTime": "3 min",
     "description": "A project to make quick web automation easier for Dev & QAs",
     "url": "/posts/articles/text-driven-ui-play.html"
