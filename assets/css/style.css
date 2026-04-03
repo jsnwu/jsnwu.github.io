@@ -109,7 +109,7 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
     Collapse-handle vertical position: `top` on .sidebar__collapseDock (absolute in this rail).
     `%` is relative to sidebar height (full column ≈ viewport). Examples: 50%, 12%, 120px.
   */
-  --sidebar-collapse-top: 10%;
+  --sidebar-collapse-top: 12%;
   /* Collapsed rail only: space above nav links (independent of --sidebar-collapse-top). */
   --sidebar-collapsed-nav-pad-top: 45px;
 }
@@ -298,7 +298,7 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
     margin-bottom: 6px;
   }
   html[data-sidebar-collapsed="true"] .brand__logo{
-    height: 44px;
+    height: 50px;
     border-radius: 12px;
   }
   html[data-sidebar-collapsed="true"] .nav{
@@ -1111,7 +1111,7 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
     right: auto;
     top: 60px;
     bottom: max(8px, env(safe-area-inset-bottom, 0px));
-    width: max-content;
+    width: 160px;
     max-width: calc(100vw - 24px);
     height: auto;
     max-height: none;
@@ -1178,9 +1178,9 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
     padding: 6px 6px 4px 14px;
   }  
   .sidebar .brand__logo{
-    width: 85px;
+    width: 95px;
     height: auto;
-    max-height: 86px;
+    max-height: 96px;
     object-fit: contain;
     border-radius: 12px;
   }
