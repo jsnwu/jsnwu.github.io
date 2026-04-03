@@ -438,10 +438,52 @@ function initSidebarToggle() {
   const menuBtns = document.querySelectorAll("[data-sidebar-toggle]");
   if (!menuBtns.length) return;
 
+  let backdrop = document.querySelector(".sidebar-backdrop");
+  if (!backdrop) {
+    backdrop = document.createElement("div");
+    backdrop.className = "sidebar-backdrop";
+    backdrop.setAttribute("aria-hidden", "true");
+    backdrop.hidden = true;
+    document.body.appendChild(backdrop);
+  }
+
+  const mobileNavMq = window.matchMedia("(max-width: 820px)");
+  let scrollLockY = 0;
+
+  const applyScrollLock = (open) => {
+    if (!mobileNavMq.matches) {
+      document.documentElement.classList.remove("sidebar-scroll-lock");
+      document.body.style.removeProperty("position");
+      document.body.style.removeProperty("top");
+      document.body.style.removeProperty("width");
+      document.body.style.removeProperty("overflow");
+      return;
+    }
+    if (open) {
+      scrollLockY = window.scrollY;
+      document.documentElement.classList.add("sidebar-scroll-lock");
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollLockY}px`;
+      document.body.style.width = "100%";
+      document.body.style.overflow = "hidden";
+    } else {
+      document.documentElement.classList.remove("sidebar-scroll-lock");
+      document.body.style.removeProperty("position");
+      document.body.style.removeProperty("top");
+      document.body.style.removeProperty("width");
+      document.body.style.removeProperty("overflow");
+      window.scrollTo(0, scrollLockY);
+    }
+  };
+
   const setOpen = (open) => {
     document.body.dataset.sidebarOpen = open ? "true" : "false";
+    backdrop.toggleAttribute("hidden", !open);
     menuBtns.forEach((b) => b.setAttribute("aria-expanded", open ? "true" : "false"));
+    applyScrollLock(open);
   };
+
+  backdrop.addEventListener("click", () => setOpen(false));
 
   menuBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -462,7 +504,6 @@ function initSidebarToggle() {
     if (!isClickInside && !isMenuButton) setOpen(false);
   });
 
-  const mobileNavMq = window.matchMedia("(max-width: 820px)");
   const closeOverlayIfDesktop = () => {
     if (!mobileNavMq.matches) setOpen(false);
   };
