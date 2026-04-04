@@ -109,7 +109,7 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
     Collapse-handle vertical position: `top` on .sidebar__collapseDock (absolute in this rail).
     `%` is relative to sidebar height (full column ≈ viewport). Examples: 50%, 12%, 120px.
   */
-  --sidebar-collapse-top: 12%;
+  --sidebar-collapse-top: 10%;
   /* Collapsed rail only: space above nav links (independent of --sidebar-collapse-top). */
   --sidebar-collapsed-nav-pad-top: 45px;
 }
