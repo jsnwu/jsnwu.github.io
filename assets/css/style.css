@@ -105,11 +105,13 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   flex-direction: column;
   gap: 0;
   min-height: 0;
+  /* Above .topbar (z-index 20): collapse handle protrudes into the topbar grid column. */
+  z-index: 22;
   /*
     Collapse-handle vertical position: `top` on .sidebar__collapseDock (absolute in this rail).
-    `%` is relative to sidebar height (full column ≈ viewport). Examples: 50%, 12%, 120px.
+    `max()` keeps the handle clear of the sticky topbar on short viewports (e.g. phone landscape).
   */
-  --sidebar-collapse-top: 10%;
+  --sidebar-collapse-top: max(4.5rem, 10%);
   /* Collapsed rail only: space above nav links (independent of --sidebar-collapse-top). */
   --sidebar-collapsed-nav-pad-top: 45px;
 }

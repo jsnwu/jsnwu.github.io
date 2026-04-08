@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <script>
+      try {
+        var bootTheme = localStorage.getItem("theme");
+        if (bootTheme === "light" || bootTheme === "dark") document.documentElement.dataset.theme = bootTheme;
+        if (localStorage.getItem("siteSidebarCollapsed") === "1") document.documentElement.dataset.sidebarCollapsed = "true";
+      } catch (err) {}
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Building a k6 Load Testing Project (TypeScript + InfluxDB + Grafana) · Jason Wu</title>
+    <meta
+      name="description"
+      content="How I built a TypeScript k6 load-testing repo with per-target scripts, Docker Compose observability (InfluxDB + Grafana), and repeatable API + browser scenarios."
+    />
+    <link rel="stylesheet" href="/assets/css/style.css" />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <div class="app">
+      <aside class="sidebar" id="site-sidebar" aria-label="Sidebar" data-include="/assets/partials/sidebar.html"></aside>
+
+      <header class="topbar" aria-label="Top bar">
+        <div class="topbar__inner">
+          <div class="topbar__lead">
+            <div data-include="/assets/partials/topbar-menu.html"></div>
+            <div
+              data-include="/assets/partials/topbar-crumb.html"
+              data-breadcrumb='[{"text":"Home","href":"/"},{"text":"Posts","href":"/posts/"},{"text":"k6 Load Stack"}]'
+            ></div>
+          </div>
+          <div class="topbar__tools">
+            <div data-include="/assets/partials/topbar-theme.html"></div>
+            <div data-include="/assets/partials/topbar-search.html"></div>
+          </div>
+        </div>
+      </header>
+
+      <main id="main" class="main" tabindex="-1">
+        <div class="main-inner">
+          <article class="content" data-article>
+            <header class="post-header">
+              <h1 class="post-title">Building a k6 Load Testing Project (TypeScript + InfluxDB + Grafana)</h1>
+              <div class="post-meta">
+                <span class="pill">Apr 8, 2026</span>
+                <span class="pill">#k6</span>
+                <span class="pill">#LoadTesting</span>
+                <span class="pill">#TypeScript</span>
+                <span class="pill">#Grafana</span>
+                <span class="pill">#InfluxDB</span>
+                <span class="pill">#Docker</span>
+                <span class="pill">6 min</span>
+              </div>
+            </header>
+
+            <h2>Intro</h2>
+            <p>
+              I wanted a load testing project that’s easy to run locally, easy to extend to new targets, and produces dashboards that the whole
+              team can read. That became <a href="https://github.com/jsnwu/k6-load" rel="noopener noreferrer">k6-load</a>: a TypeScript k6 repo
+              bundled with esbuild, with two kinds of tests (HTTP + browser), and a simple observability stack (InfluxDB + Grafana) that you can
+              keep running while you fire off short-lived k6 runs.
+            </p>
+
+            <p>
+              The two key decisions were:
+            </p>
+            <ul>
+              <li>
+                Keep load generation <strong>ephemeral</strong> (k6 runs in one-off containers).
+              </li>
+              <li>
+                Keep observability <strong>persistent</strong> (InfluxDB + Grafana runs as a long-lived Docker Compose stack).
+              </li>
+            </ul>
+
+            <figure class="article-figure">
+              <img
+                src="/assets/img/articles/k6-load/grafana-dashboard.png"
+                alt="Grafana dashboard showing k6 overview panels for VUs, request rate, latency, error rate, and other load test metrics."
+              />
+              <figcaption>Grafana: starter k6 overview dashboard.</figcaption>
+            </figure>
+
+            <figure class="article-figure">
+              <img
+                src="/assets/img/articles/k6-load/k6-docker-cluster.png"
+                alt="Docker Desktop view of the observability stack and ephemeral k6 runners, showing containers for Grafana and InfluxDB."
+              />
+              <figcaption>Docker Compose: observability stack (InfluxDB + Grafana) plus k6 runners.</figcaption>
+            </figure>
+
+            <h2>Project layout and naming</h2>
+            <p>
+              The repo is organized around <em>targets</em>. Each target has its own scripts, env template, and (optionally) browser scenarios:
+            </p>
+            <ul>
+              <li><code>src/targets/slicedice/</code> — API + browser test flows against my Slice Dice app.</li>
+              <li><code>src/targets/starwars/</code> — a public HTTP example using SWAPI (good for verifying the stack quickly).</li>
+              <li><code>dist/*.js</code> — esbuild output; these are the files you actually execute with <code>k6 run</code>.</li>
+              <li><code>grafana/</code> — provisioning for datasource + dashboards.</li>
+            </ul>
+
+            <p>
+              I also standardized a few conventions so “new target” doesn’t turn into “new snowflake”:
+            </p>
+            <ul>
+              <li><strong>Bundle names</strong>: <code>slicedice</code>, <code>starwars</code> (folder + dist output).</li>
+              <li><strong>Buckets</strong>: one per target, like <code>k6_slicedice</code>, <code>k6_starwars</code>.</li>
+              <li>
+                <strong>Run labels</strong>: <code>LOAD_TEST_TYPE</code> becomes a k6 tag so Grafana can slice runs by intent
+                (<code>simulate_traffic</code>, <code>database_optimization</code>, etc).
+              </li>
+            </ul>
+
+            <h2>Why TypeScript for k6</h2>
+            <p>
+              k6 runs JavaScript, but for any non-trivial suite I like TypeScript’s types, refactors, and shared libraries. The repo builds with
+              esbuild into <code>dist/</code> so the runtime stays simple:
+            </p>
+            <pre class="pre--dedent">
+              <code>
+                npm install
+                npm run build
+                k6 run dist/starwars.js
+              </code>
+            </pre>
+
+            <p>
+              Most runs happen in a container image that already includes k6 and the Influx output plugin, so you don’t need to install k6 locally.
+              If you <em>do</em> install k6 locally, it’s mainly for a nicer debugging loop (especially for browser scenarios).
+            </p>
+
+            <h2>Quick start</h2>
+            <p>
+              The workflow is: start the long-lived observability stack once, then run short-lived k6 jobs against whichever target you want.
+            </p>
+            <pre class="pre--dedent">
+              <code>
+                cp .env.example .env
+                docker compose -f docker-compose.observability.yml up -d
+              </code>
+            </pre>
+            <p>
+              Then run a quick test to confirm everything is wired correctly:
+            </p>
+            <pre class="pre--dedent">
+              <code>
+                docker compose -f docker-compose.k6.yml build
+                docker compose -f docker-compose.k6.yml --env-file .env --env-file .env.example.starwars run --rm k6-starwars
+              </code>
+            </pre>
+
+            <h2>InfluxDB + Grafana via Docker Compose</h2>
+            <p>
+              The observability stack is started once and kept running:
+            </p>
+            <pre class="pre--dedent">
+              <code>
+                cp .env.example .env
+                docker compose -f docker-compose.observability.yml up -d
+              </code>
+            </pre>
+
+            <p>
+              After that, each test run only needs to ship metrics to InfluxDB. Grafana is pre-provisioned with a datasource and a starter
+              dashboard (<code>k6 overview</code>) that can filter by bucket, scenario, and test type.
+            </p>
+
+            <h3>Two common gotchas</h3>
+            <ul>
+              <li>
+                <strong>Influx “unauthorized”</strong>: InfluxDB 2 needs an <em>API token</em> (not the UI password). If the token in your
+                <code>.env</code> doesn’t match what Influx was initialized with, metrics will fail to write. When iterating locally, a clean reset
+                is often simplest:
+                <pre class="pre--dedent">
+                  <code>
+                    docker compose -f docker-compose.observability.yml down -v
+                    docker compose -f docker-compose.observability.yml up -d
+                  </code>
+                </pre>
+              </li>
+              <li>
+                <strong>k6 can’t reach <code>localhost</code></strong>: inside Docker, <code>localhost</code> is the runner container. To hit a
+                service on your host, use <code>http://host.docker.internal:&lt;port&gt;</code> (or use a compose service name if the target is on
+                the same network).
+              </li>
+            </ul>
+
+
+
+            <h2>Make load tests “real” (user pools)</h2>
+            <p>
+              The fastest way to get misleading results is to load test with one account. You’ll over-reuse cached data and accidentally benchmark
+              the “best case” path. For app-like targets, <code>k6-load</code> uses a pool of users (YAML) and assigns one user per VU so sessions
+              and permissions vary across the run.
+            </p>
+            <p>
+              For Slice Dice, there’s a helper to seed users:
+            </p>
+            <pre class="pre--dedent">
+              <code>
+                ./scripts/slicedice/seed-users.sh
+              </code>
+            </pre>
+
+            <h2>API target: authentication + a YAML user pool</h2>
+            <p>
+              For app-like targets, I wanted “many users” without copying credentials into scripts. The Slice Dice target reads a YAML array of
+              users (mounted into the k6 container) and assigns a user per VU.
+            </p>
+            <p>
+              At runtime you mostly care about:
+            </p>
+            <ul>
+              <li><code>BASE_URL</code> — where the API lives.</li>
+              <li><code>USERS_FILE</code> — path to a YAML user list (mounted into the container).</li>
+            </ul>
+            <p>
+              One subtle point: inside Docker, <code>http://localhost</code> points at the k6 container, not your laptop. If you’re load testing an
+              API running on the host, use <code>http://host.docker.internal:&lt;port&gt;</code> (or a compose service name if it’s on the same
+              docker network).
+            </p>
+
+            <h2>Browser scenarios: useful grouping without relying on group()</h2>
+            <p>
+              With k6 browser, <code>group()</code> is not reliable with async actions, which makes it hard to build “page-level” dashboards by
+              group name alone.
+            </p>
+            <p>
+              The approach in <code>k6-load</code> is to record an async-safe flow metric (a <code>Trend</code>) and tag it with a
+              <code>flow</code> label (page-object style steps like login, browse menu, checkout). The Grafana dashboard then filters and compares
+              those tagged flow durations alongside the usual request metrics.
+            </p>
+
+            <h2>Grafana Dashboard</h2>
+            <p>
+              The repo ships a starter “k6 overview” dashboard with variables for bucket, client (HTTP / browser), scenario, page group, and test
+              type. The variable values are derived from the metrics present in InfluxDB for the selected time range, so you can quickly narrow
+              down to the exact run you care about.
+            </p>
+            
+            <h2>Reloading dashboards while iterating</h2>
+            <p>
+              When editing <code>grafana/dashboards/*.json</code>, I prefer a quick provisioning reload instead of restarting the whole stack:
+            </p>
+            <pre class="pre--dedent">
+              <code>
+                ./scripts/reload-grafana-dashboards.sh
+              </code>
+            </pre>
+
+            <h2>Wrap-up</h2>
+            <p>
+              The end result is a repo that makes iteration cheap: add a target, bundle to <code>dist/</code>, run k6 in a disposable container,
+              and always have the same dashboards waiting in Grafana. If you want to see the full setup (compose files, scripts, and the starter
+              dashboard), the source is here:
+              <a href="https://github.com/jsnwu/k6-load" rel="noopener noreferrer">jsnwu/k6-load</a>.
+            </p>
+          </article>
+
+          <aside class="rail" aria-label="Right rail" data-include="/assets/partials/rail-post.html"></aside>
+        </div>
+      </main>
+    </div>
+
+    <script src="/assets/js/main.js" defer></script>
+  </body>
+</html>

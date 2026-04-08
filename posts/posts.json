@@ -1,5 +1,13 @@
 [
   {
+    "title": "Building a k6 Load Testing Project (TypeScript + InfluxDB + Grafana)",
+    "date": "2026-04-08",
+    "tags": ["k6", "load-testing", "typescript", "grafana", "influxdb", "docker", "dashboard"],
+    "readingTime": "6 min",
+    "description": "A repeatable k6 load-testing repo: TypeScript bundles, per-target scripts, and Docker Compose observability with InfluxDB + Grafana.",
+    "url": "/posts/articles/k6-load-testing.html"
+  },
+  {
     "title": "Deploying Next.js & Django Web App with AWS CDK",
     "date": "2026-04-02",
     "tags": ["aws", "cdk", "ecs", "nexst-js", "django", "typescript", "deployment"],
