@@ -82,7 +82,7 @@
               <li>Keyboard shortcut to toggle pick mode (useful for dropdowns, hover, and other fiddly targets).</li>
               <li>Highlights when capturing and when verifying matches.</li>
               <li>Simpler popup flow for a single “current pick” instead of a long history list.</li>
-              <li>Support for evaluating <code>.nth()</code> style locators when you need disambiguation, and chaining locators.</li>
+              <li>Support for evaluating <code>.nth()</code> style locators when you need disambiguation, and chaining locators and filtering.</li>
             </ul>
 
             <h2>Core features</h2>
@@ -96,8 +96,12 @@
                 Playwright JS / <code>playwright-test</code> style (<code>page.getByRole(…)</code>, and so on).
               </li>
               <li>
-                <strong>Chaining</strong> — when a node is not unique, the tool can walk up to a stable parent and build a chained locator (for
-                example <code>page.getByRole('list').getByRole('listitem', { name: '…' })</code>).
+                <strong>Chaining enhancement</strong> — when a node is not unique, the tool can walk up to a stable parent and build a chained locator (for
+                example <code>page.locator('a').getByRole('listitem', { name: '…' })</code>).
+              </li>
+              <li>
+                <strong>Filtering</strong> — when a node is not unique, the tool can filter by text, placeholder, alt, title, test id, or CSS.
+                For example, <code>page.locator('a').filter({ hasText: '…' })</code>, or add <code>.nth(1)</code> to the end to narrow down to a specific item.
               </li>
               <li>
                 <strong>Evaluate locator</strong> — paste <code>page.getBy…</code>, <code>page.locator('…')</code>, or a CSS selector;
