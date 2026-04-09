@@ -899,7 +899,8 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   overflow:auto;
 }
 .content pre code{ background: transparent; border: 0; padding: 0; }
-.content[data-article] img{
+/* Inline images in prose (not inside article figures — those are styled below). */
+.content[data-article] img:not(figure img){
   max-width: 100%;
   height: auto;
 }
@@ -920,13 +921,35 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
 .content[data-article] figure.article-figure{
   margin: 16px 0;
 }
-.content[data-article] figure.article-figure img{
+/* Default: images span the article column. */
+.content[data-article] figure.article-figure:not(.article-figure--natural) img{
   display: block;
   width: 100%;
   max-width: 100%;
   height: auto;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
+}
+/* Natural size: shrink-wrap figure to the bitmap (no column-wide “full bleed”). */
+.content[data-article] figure.article-figure--natural{
+  width: fit-content;
+  max-width: 100%;
+  margin-left: 0;
+  margin-right: auto;
+  overflow-x: auto;
+}
+/*
+  Honor HTML width/height attributes and inline styles: do not force width/height here.
+  max-width keeps wide bitmaps inside the article column on small viewports.
+*/
+.content[data-article] figure.article-figure--natural img{
+  display: block;
+  width: unset;
+  height: unset;
+  max-width: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
 }
 .content[data-article] figure.article-figure figcaption{
   margin-top: 10px;

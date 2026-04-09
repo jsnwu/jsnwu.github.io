@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <script>
+      try {
+        var bootTheme = localStorage.getItem("theme");
+        if (bootTheme === "light" || bootTheme === "dark") document.documentElement.dataset.theme = bootTheme;
+        if (localStorage.getItem("siteSidebarCollapsed") === "1") document.documentElement.dataset.sidebarCollapsed = "true";
+      } catch (err) {}
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Playwright Locator Helper (Chrome extension) · Jason Wu</title>
+    <meta
+      name="description"
+      content="A Chrome extension fork of Playwright Locator Assistant: pick elements, compare locator strategies, verify uniqueness, and copy Playwright-style selectors."
+    />
+    <link rel="stylesheet" href="/assets/css/style.css" />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <div class="app">
+      <aside class="sidebar" id="site-sidebar" aria-label="Sidebar" data-include="/assets/partials/sidebar.html"></aside>
+
+      <header class="topbar" aria-label="Top bar">
+        <div class="topbar__inner">
+          <div class="topbar__lead">
+            <div data-include="/assets/partials/topbar-menu.html"></div>
+            <div
+              data-include="/assets/partials/topbar-crumb.html"
+              data-breadcrumb='[{"text":"Home","href":"/"},{"text":"Posts","href":"/posts/"},{"text":"Playwright Locator Helper"}]'
+            ></div>
+          </div>
+          <div class="topbar__tools">
+            <div data-include="/assets/partials/topbar-theme.html"></div>
+            <div data-include="/assets/partials/topbar-search.html"></div>
+          </div>
+        </div>
+      </header>
+
+      <main id="main" class="main" tabindex="-1">
+        <div class="main-inner">
+          <article class="content" data-article>
+            <header class="post-header">
+              <h1 class="post-title">Playwright Locator Helper (Chrome extension)</h1>
+              <div class="post-meta">
+                <span class="pill">Apr 9, 2026</span>
+                <span class="pill">#Playwright</span>
+                <span class="pill">#Chrome</span>
+                <span class="pill">#Testing</span>
+                <span class="pill">#Locators</span>
+                <span class="pill">5 min</span>
+              </div>
+            </header>
+
+            <h2>What it is</h2>
+            <p>
+              <a href="https://github.com/jsnwu/playwright-locator" rel="noopener noreferrer"><strong>playwright-locator</strong></a> is a Chrome
+              extension that helps you generate and sanity-check <strong>Playwright-style locators</strong> against the page you are looking at.
+              It is a fork of
+              <a href="https://github.com/tickytec/Playwright-Locator-Assistant" rel="noopener noreferrer">tickytec/Playwright-Locator-Assistant</a>,
+              with a few workflow tweaks I wanted for day-to-day test authoring.
+            </p>
+
+            <figure class="article-figure">
+              <img style="width: 375px; height: auto; margin: 0 auto;"
+                src="/assets/img/articles/playwright-locator/extension-duckduckgo-search.png"
+                alt="Playwright Locator Helper extension popup: Pick Element button; strategy rows for ROLE plus NAME, ROLE UNIQUE, PLACEHOLDER, and CSS with Verify and Copy; Evaluate locator textarea with one element highlighted; keyboard shortcut Shift-Command-F with Edit."
+              />
+              <figcaption>
+                After picking an element, multiple strategies with per-row verify, an
+                <strong>Evaluate</strong> sandbox, and a configurable shortcut (shown as <kbd>⇧⌘F</kbd>).
+              </figcaption>
+            </figure>
+
+            <h2>What changed in my fork</h2>
+            <ul>
+              <li>Ranked suggestions by role, text, placeholder / alt / title, test id, or CSS.</li>
+              <li>Keyboard shortcut to toggle pick mode (useful for dropdowns, hover, and other fiddly targets).</li>
+              <li>Highlights when capturing and when verifying matches.</li>
+              <li>Simpler popup flow for a single “current pick” instead of a long history list.</li>
+              <li>Support for evaluating <code>.nth()</code> style locators when you need disambiguation, and chaining locators.</li>
+            </ul>
+
+            <h2>Core features</h2>
+            <ul>
+              <li>
+                <strong>Pick Element</strong> — crosshair mode with hover outline; uses <code>composedPath()</code> where it helps for nested or
+                shadow DOM.
+              </li>
+              <li>
+                <strong>Up to five strategies per pick</strong> — each row has <strong>Verify</strong> and <strong>Copy</strong>; output is
+                Playwright JS / <code>playwright-test</code> style (<code>page.getByRole(…)</code>, and so on).
+              </li>
+              <li>
+                <strong>Chaining</strong> — when a node is not unique, the tool can walk up to a stable parent and build a chained locator (for
+                example <code>page.getByRole('list').getByRole('listitem', { name: '…' })</code>).
+              </li>
+              <li>
+                <strong>Evaluate locator</strong> — paste <code>page.getBy…</code>, <code>page.locator('…')</code>, or a CSS selector;
+                <kbd>Ctrl+Enter</kbd> (Windows/Linux) or <kbd>⌘+Enter</kbd> (macOS) runs it, same idea as Verify on the active tab.
+              </li>
+              <li>
+                <strong>Match highlighting</strong> — successful Verify/Evaluate runs outline matches in green; highlights clear when you close
+                the popup or re-enter pick mode so the page does not keep stale overlays.
+              </li>
+              <li>
+                <strong>On-page banner</strong> — because the popup cannot be semi-transparent, a short frosted banner on the page shows match
+                counts after Verify/Evaluate; it auto-dismisses or you can click Dismiss.
+              </li>
+            </ul>
+
+            <h2>Install (load unpacked)</h2>
+            <ol>
+              <li>Open Chrome → <strong>Extensions</strong>.</li>
+              <li>Turn on <strong>Developer mode</strong>.</li>
+              <li>Click <strong>Load unpacked</strong> and select the repo folder that contains <code>manifest.json</code>.</li>
+            </ol>
+            <p>
+              Optional: set a comfortable shortcut under <strong>Extensions → Details → Extension shortcuts</strong> (default is
+              <kbd>Ctrl+Shift+F</kbd> / <kbd>⌘⇧F</kbd> for pick mode).
+            </p>
+
+            <h2>Typical flow</h2>
+            <ol>
+              <li>Open the extension popup → <strong>Pick Element</strong> → click the target on the page.</li>
+              <li>Review the suggested strategies → <strong>Verify</strong> the one that matches what you meant.</li>
+              <li><strong>Copy</strong> the locator into your Playwright test.</li>
+            </ol>
+
+
+            <h2>Publish the extension</h2>
+            <p>
+              I am trying to publish the extension to the Chrome Web Store, but it is currently in review. Hoepfully this will be publicily available in a few days.
+            </p>
+
+            <h2>Further reading</h2>
+            <p>
+              Playwright’s locator docs cover <code>getByRole</code>, <code>getByText</code>, <code>getByLabel</code>, CSS, and XPath—worth
+              skimming so the extension’s suggestions map cleanly to how you write tests. For a concise walkthrough of those ideas, see
+              <a
+                href="https://dev.to/keepcodn/playwright-locators-guide-getbyrole-getbytext-getbylabel-css-xpath-24n0"
+                rel="noopener noreferrer"
+                >Playwright locators guide: getByRole, getByText, getByLabel, CSS, XPath</a>
+              on DEV.
+            </p>
+
+            <h2>Links</h2>
+            <ul>
+              <li><a href="https://github.com/jsnwu/playwright-locator" rel="noopener noreferrer">GitHub: jsnwu/playwright-locator</a></li>
+              <li><a href="https://github.com/tickytec/Playwright-Locator-Assistant" rel="noopener noreferrer">Upstream: tickytec/Playwright-Locator-Assistant</a></li>
+            </ul>
+          </article>
+
+          <aside class="rail" aria-label="Right rail" data-include="/assets/partials/rail-post.html"></aside>
+        </div>
+      </main>
+    </div>
+
+    <script src="/assets/js/main.js" defer></script>
+  </body>
+</html>

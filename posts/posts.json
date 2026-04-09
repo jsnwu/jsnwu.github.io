@@ -1,5 +1,13 @@
 [
   {
+    "title": "Playwright Locator Helper (Chrome extension)",
+    "date": "2026-04-09",
+    "tags": ["playwright", "chrome-extension", "testing", "locators", "qa", "e2e"],
+    "readingTime": "5 min",
+    "description": "A Chrome extension to generate, verify, and copy Playwright-style locators from any page—forked from Playwright Locator Assistant.",
+    "url": "/posts/articles/playwright-locator-helper.html"
+  },
+  {
     "title": "Building a k6 Load Testing Project (TypeScript + InfluxDB + Grafana)",
     "date": "2026-04-08",
     "tags": ["k6", "load-testing", "typescript", "grafana", "influxdb", "docker", "dashboard"],
