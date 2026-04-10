@@ -62,15 +62,15 @@
               slow round trip to a model, end-to-end suites only get heavier.
             </p>
             <p>
-              The idea still stuck with me after chats at work and posts I read online. I tried
+              The idea still stuck with me after chats at work and posts I read online. Finally, I come across a github project
               <a href="https://github.com/marttinm/playwright-auto-healer" rel="noopener noreferrer">marttinm/playwright-auto-healer</a>—solid
-              LLM-driven healing—and the results were encouraging.
+              LLM-driven healing—and the results were encouraging. 
             </p>
             <p>
-              I used that as a starting point and shipped
+              I used that as a starting point and created
               <a href="https://github.com/jsnwu/playwright-ai-heal" rel="noopener noreferrer"><strong>playwright-ai-heal</strong></a> with a few
               changes I wanted: a <strong>local DOM resolver</strong> first (fast, no tokens), <strong>cached heals</strong> from
-              earlier runs, and providers such as <strong>Groq</strong> when you do want a free remote model.
+              earlier runs, and providers such as <strong>Groq</strong> when you do want a free remote model. It's a simple project to start with and will keep evolving until it meets my needs.
             </p>
 
             <h2>What it does</h2>
@@ -143,8 +143,7 @@
             <p>See the repo README for the full table; these are the switches I use most:</p>
             <ul>
               <li>
-                <code>USE_AI_HEAL</code> — set to <code>false</code> / <code>0</code> / <code>off</code> to disable instrumentation for a baseline
-                run.
+                <code>USE_AI_HEAL</code> — set to <code>false</code> to disable instrumentation for a baseline run.
               </li>
               <li>
                 <code>USE_LOCAL_RESOLVER</code> — when true, run the rule-based resolver on the DOM before any LLM call (saves latency and cost
@@ -161,7 +160,7 @@
             </ul>
 
             <h2>How healing is ordered</h2>
-            <p>On <code>locator.fill</code> / <code>locator.click</code> failure (and optionally before the original when prefer-healed is on):</p>
+            <p>On a user action failure (and optionally before the original when prefer-healed is on):</p>
             <ol>
               <li>
                 Persisted mappings in
@@ -181,7 +180,7 @@
               I will continue to work on this project to make it more powerful and useful.
             </p>
             <ul>
-              <li>Add more actions to support</li>
+              <li>Add more supported actions</li>
               <li>Add pull request scanner to detect if there's locator change</li>
             </ul>
 

@@ -54,7 +54,7 @@
             <h2>Where things live</h2>
             <ul>
               <li><code>/index.html</code> is the homepage.</li>
-              <li><code>/posts/</code> holds post pages and the posts index.</li>
+              <li><code>/posts/</code> holds the posts index; articles live under <code>/posts/articles/YYYY-MM/</code> (one folder per month).</li>
               <li><code>/posts/posts.json</code> lists posts for the UI.</li>
               <li><code>/assets/</code> has CSS/JS and images.</li>
               <li><code>/assets/partials/</code> holds shared sidebar, topbar (menu, theme, search), and rail HTML; pages load them via <code>data-include</code> in <code>main.js</code>. Edit those files to change chrome site-wide. If you use VS Code Live Server, it can inject reload scripts into <code>.html</code> responses (even inside <code>&lt;svg&gt;</code>), which used to break partials; <code>main.js</code> strips that noise after fetch.</li>
@@ -62,7 +62,7 @@
 
             <h2>Add a new post</h2>
             <ol>
-              <li>Create <code>/posts/your-slug.html</code> by copying an existing post (keep the <code>data-include</code> placeholders; only change head metadata, breadcrumb, and article body).</li>
+              <li>Create <code>/posts/articles/YYYY-MM/your-slug.html</code> by copying an existing post (keep the <code>data-include</code> placeholders; only change head metadata, breadcrumb, and article body). Use the post’s publication month for <code>YYYY-MM</code>.</li>
               <li>Add an entry to <code>/posts/posts.json</code>.</li>
             </ol>
           </article>

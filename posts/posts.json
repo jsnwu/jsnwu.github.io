@@ -5,7 +5,7 @@
     "tags": ["playwright", "typescript", "ai", "testing", "auto-healing", "e2e", "ollama"],
     "readingTime": "6 min",
     "description": "Auto-heal flaky Playwright locators: local resolver and caches first, then LLM providers—import test from playwright-ai-heal; inspired by playwright-auto-healer.",
-    "url": "/posts/articles/playwright-ai-heal.html"
+    "url": "/posts/articles/2026-04/playwright-ai-heal.html"
   },
   {
     "title": "Playwright Locator Helper (Chrome extension)",
@@ -13,7 +13,7 @@
     "tags": ["playwright", "chrome-extension", "testing", "locators", "qa", "e2e"],
     "readingTime": "5 min",
     "description": "A Chrome extension to generate, verify, and copy Playwright-style locators from any page—forked from Playwright Locator Assistant.",
-    "url": "/posts/articles/playwright-locator-helper.html"
+    "url": "/posts/articles/2026-04/playwright-locator-helper.html"
   },
   {
     "title": "Building a k6 Load Testing Project (TypeScript + InfluxDB + Grafana)",
@@ -21,7 +21,7 @@
     "tags": ["k6", "load-testing", "typescript", "grafana", "influxdb", "docker", "dashboard"],
     "readingTime": "6 min",
     "description": "A repeatable k6 load-testing repo: TypeScript bundles, per-target scripts, and Docker Compose observability with InfluxDB + Grafana.",
-    "url": "/posts/articles/k6-load-testing.html"
+    "url": "/posts/articles/2026-04/k6-load-testing.html"
   },
   {
     "title": "Deploying Next.js & Django Web App with AWS CDK",
@@ -29,7 +29,7 @@
     "tags": ["aws", "cdk", "ecs", "nexst-js", "django", "typescript", "deployment"],
     "readingTime": "5 min",
     "description": "Deploy Next.js & Django Web App to ECS Fargate behind an ALB, the AWS CDK can make it a task of breeze",
-    "url": "/posts/articles/slice-dice-aws-cdk.html"
+    "url": "/posts/articles/2026-04/slice-dice-aws-cdk.html"
   },
   {
     "title": "Getting started",
@@ -37,7 +37,7 @@
     "tags": ["tutorial", "setup"],
     "readingTime": "2 min",
     "description": "How this repo is organized, and how to add posts without any build step.",
-    "url": "/posts/articles/getting-started.html"
+    "url": "/posts/articles/2026-03/getting-started.html"
   },
   {
     "title": "Text driven Web UI recorder and player",
@@ -45,7 +45,6 @@
     "tags": ["ui recorder", "ui player", "text-driven", "typescript"],
     "readingTime": "3 min",
     "description": "A project to make quick web automation easier for Dev & QAs",
-    "url": "/posts/articles/text-driven-ui-play.html"
+    "url": "/posts/articles/2026-03/text-driven-ui-play.html"
   }
 ]
-
