@@ -1,5 +1,13 @@
 [
   {
+    "title": "Playwright Locator Auto Heal (Local and AI)",
+    "date": "2026-04-10",
+    "tags": ["playwright", "typescript", "ai", "testing", "auto-healing", "e2e", "ollama"],
+    "readingTime": "6 min",
+    "description": "Auto-heal flaky Playwright locators: local resolver and caches first, then LLM providers—import test from playwright-ai-heal; inspired by playwright-auto-healer.",
+    "url": "/posts/articles/playwright-ai-heal.html"
+  },
+  {
     "title": "Playwright Locator Helper (Chrome extension)",
     "date": "2026-04-09",
     "tags": ["playwright", "chrome-extension", "testing", "locators", "qa", "e2e"],

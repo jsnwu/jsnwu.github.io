@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <script>
+      try {
+        var bootTheme = localStorage.getItem("theme");
+        if (bootTheme === "light" || bootTheme === "dark") document.documentElement.dataset.theme = bootTheme;
+        if (localStorage.getItem("siteSidebarCollapsed") === "1") document.documentElement.dataset.sidebarCollapsed = "true";
+      } catch (err) {}
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Playwright AI Heal — auto-healing locators · Jason Wu</title>
+    <meta
+      name="description"
+      content="playwright-ai-heal: when click or fill fails, retry with a local DOM resolver, cached heals, or an LLM—wired through Playwright’s test fixture."
+    />
+    <link rel="stylesheet" href="/assets/css/style.css" />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <div class="app">
+      <aside class="sidebar" id="site-sidebar" aria-label="Sidebar" data-include="/assets/partials/sidebar.html"></aside>
+
+      <header class="topbar" aria-label="Top bar">
+        <div class="topbar__inner">
+          <div class="topbar__lead">
+            <div data-include="/assets/partials/topbar-menu.html"></div>
+            <div
+              data-include="/assets/partials/topbar-crumb.html"
+              data-breadcrumb='[{"text":"Home","href":"/"},{"text":"Posts","href":"/posts/"},{"text":"Playwright AI Heal"}]'
+            ></div>
+          </div>
+          <div class="topbar__tools">
+            <div data-include="/assets/partials/topbar-theme.html"></div>
+            <div data-include="/assets/partials/topbar-search.html"></div>
+          </div>
+        </div>
+      </header>
+
+      <main id="main" class="main" tabindex="-1">
+        <div class="main-inner">
+          <article class="content" data-article>
+            <header class="post-header">
+              <h1 class="post-title">Playwright AI Heal</h1>
+              <div class="post-meta">
+                <span class="pill">Apr 10, 2026</span>
+                <span class="pill">#Playwright</span>
+                <span class="pill">#TypeScript</span>
+                <span class="pill">#AI</span>
+                <span class="pill">#Testing</span>
+                <span class="pill">6 min</span>
+              </div>
+            </header>
+
+            <h2>Intro</h2>
+            <p>
+              I am skeptical about leaning on LLMs for test maintenance. Auto-healing sounds convenient, but if every flaky locator triggers a
+              slow round trip to a model, end-to-end suites only get heavier.
+            </p>
+            <p>
+              The idea still stuck with me after chats at work and posts I read online. I tried
+              <a href="https://github.com/marttinm/playwright-auto-healer" rel="noopener noreferrer">marttinm/playwright-auto-healer</a>—solid
+              LLM-driven healing—and the results were encouraging.
+            </p>
+            <p>
+              I used that as a starting point and shipped
+              <a href="https://github.com/jsnwu/playwright-ai-heal" rel="noopener noreferrer"><strong>playwright-ai-heal</strong></a> with a few
+              changes I wanted: a <strong>local DOM resolver</strong> first (fast, no tokens), <strong>cached heals</strong> from
+              earlier runs, and providers such as <strong>Groq</strong> when you do want a free remote model.
+            </p>
+
+            <h2>What it does</h2>
+            <p>
+              When a <code>click</code> or <code>fill</code> fails, the library can retry with a better selector. Healing is layered: reuse what
+              already worked, run heuristics on the live page, then call an LLM if needed. You opt in by importing <code>test</code> from
+              <code>playwright-ai-heal</code> instead of <code>@playwright/test</code> so the <code>page</code> fixture can instrument locators.
+            </p>
+            <p>
+              Currently it's only limited to <code>click</code> and <code>fill</code> actions. It can be extended to other actions in the future.
+            </p>
+
+            <h2>Quick start</h2>
+            <ol>
+              <li>
+                Install dependencies (peer: <code>@playwright/test</code> ≥ 1.40) and browsers:
+                <pre class="pre--dedent"><code>
+                  npm install
+                  npx playwright install
+                </code></pre>
+              </li>
+              <li>
+                Import from this package:
+                <pre class="pre--dedent"><code>
+                  import { test, expect } from 'playwright-ai-heal';
+                </code></pre>
+              </li>
+              <li>Copy <code>.env.example</code> to <code>.env</code> and set keys if you use a remote provider; local-only paths work with defaults.</li>
+              <li>
+                Run tests as usual—no custom CLI:
+                <pre class="pre--dedent"><code>
+                  npx playwright test
+                </code></pre>
+              </li>
+            </ol>
+
+            <h2>Local resolver vs Groq (example logs)</h2>
+            <p>
+              With <code>USE_LOCAL_RESOLVER=true</code>, a rule-based pass can resolve a broken selector in milliseconds—here, an outdated
+              <code>data-testid</code> maps to a stable placeholder:
+            </p>
+            <pre class="pre--dedent"><code>
+              Using AI Provider: groq
+              Fill failed on "[data-testid="email-old"]", attempting AI healing...
+              Auto-healing selector: [data-testid="email-old"]
+              Local locator resolver matched in 9ms: [data-testid="email-old"] → [placeholder="you@example.com"]
+              Healed selector: [data-testid="email-old"] → [placeholder="you@example.com"]
+              Consider updating your test with the new selector: [placeholder="you@example.com"]
+              Healed: "[data-testid="email-old"]" -> "[placeholder="you@example.com"]"
+            </code></pre>
+
+            <p>
+              With the local resolver skipped or unsuccessful, Groq can suggest a locator; the same flow took on the order of hundreds of
+              milliseconds in this run:
+            </p>
+            <pre class="pre--dedent"><code>
+              Using AI Provider: groq
+              Fill failed on "[data-testid="password-old"]", attempting AI healing...
+              Auto-healing selector: [data-testid="password-old"]
+              Using Groq model: llama-3.3-70b-versatile
+              Prompt length: 1460 characters
+              Groq suggested: [placeholder="Password"]
+              AI prompt completed: 309ms
+              Healed selector: [data-testid="password-old"] → [placeholder="Password"]
+              Consider updating your test with the new selector: [placeholder="Password"]
+              Healed: "[data-testid="password-old"]" -> "[placeholder="Password"]"
+            </code></pre>
+
+            <h2>Environment toggles</h2>
+            <p>See the repo README for the full table; these are the switches I use most:</p>
+            <ul>
+              <li>
+                <code>USE_AI_HEAL</code> — set to <code>false</code> / <code>0</code> / <code>off</code> to disable instrumentation for a baseline
+                run.
+              </li>
+              <li>
+                <code>USE_LOCAL_RESOLVER</code> — when true, run the rule-based resolver on the DOM before any LLM call (saves latency and cost
+                when it finds a unique match).
+              </li>
+              <li>
+                <code>PREFER_HEALED_LOCATOR</code> — when true, try persisted or in-session healed selectors <em>before</em> the original locator on
+                each action.
+              </li>
+              <li>
+                <code>AI_PROVIDER</code> — <code>ollama</code>, <code>gemini</code>, <code>anthropic</code>, or <code>groq</code>; can be inferred
+                from API keys when unset.
+              </li>
+            </ul>
+
+            <h2>How healing is ordered</h2>
+            <p>On <code>locator.fill</code> / <code>locator.click</code> failure (and optionally before the original when prefer-healed is on):</p>
+            <ol>
+              <li>
+                Persisted mappings in
+                <code>.playwright-healer/recommendations/selector-recommendations.json</code> (from the last report refresh).
+              </li>
+              <li>In-memory session cache for the current Node process.</li>
+              <li>
+                <code>AutoHealer.healSelector</code>: local DOM resolver (if enabled), then an LLM suggestion, then validation with
+                <code>waitFor</code> on the page.
+              </li>
+            </ol>
+            <p>Artifacts land under <code>.playwright-healer/</code> (temp logs plus merged recommendations).</p>
+
+            <h2>Reports</h2>
+            <p>
+              <code>writeHealingReport()</code> refreshes <code>selector-recommendations.json</code> and <code>healing-report.md</code> from the temp
+              healing log. The sample <code>playwright.config.ts</code> wires that into <code>globalTeardown</code>, so a normal
+              <code>npx playwright test</code> can keep recommendations current—as long as tests import <code>test</code> from
+              <code>playwright-ai-heal</code>.
+            </p>
+
+            <h2>Repository layout</h2>
+            <ul>
+              <li><code>healer/</code> — library source (TypeScript).</li>
+              <li><code>tests/</code>, <code>pages/</code> — example Playwright + page objects.</li>
+              <li><code>web-page/</code> — static demo app.</li>
+            </ul>
+
+            <h2>API surface</h2>
+            <p>
+              Beyond wrapped <code>test</code> and <code>expect</code>, exports include <code>AutoHealer</code>, <code>setupAutoHealing</code>,
+              <code>getHealingResults</code>, <code>PlaywrightHealer</code>, <code>withAutoHealing</code>, and <code>writeHealingReport</code>. Types
+              such as <code>HealerConfig</code> and <code>HealingResult</code> are documented in the README.
+            </p>
+
+            <h2>Links</h2>
+            <ul>
+              <li><a href="https://github.com/jsnwu/playwright-ai-heal" rel="noopener noreferrer">GitHub: jsnwu/playwright-ai-heal</a> (MIT)</li>
+              <li>
+                <a href="https://github.com/marttinm/playwright-auto-healer" rel="noopener noreferrer">Inspiration: marttinm/playwright-auto-healer</a>
+              </li>
+            </ul>
+          </article>
+
+          <aside class="rail" aria-label="Right rail" data-include="/assets/partials/rail-post.html"></aside>
+        </div>
+      </main>
+    </div>
+
+    <script src="/assets/js/main.js" defer></script>
+  </body>
+</html>
