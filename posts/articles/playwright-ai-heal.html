@@ -58,23 +58,29 @@
 
             <h2>Intro</h2>
             <p>
-              I am wary of leaning on LLMs for every test fix: auto-healing is tempting, but if each flaky locator means a slow model round trip,
-              suites only get heavier.
+              I am skeptical about leaning on LLMs for test maintenance. Auto-healing sounds convenient, but if every flaky locator triggers a
+              slow round trip to a model, end-to-end suites only get heavier.
             </p>
             <p>
-              I still wanted to try the pattern. <a href="https://github.com/marttinm/playwright-auto-healer" rel="noopener noreferrer">marttinm/playwright-auto-healer</a>
-              is a solid LLM-first take; it worked well enough that I built
-              <a href="https://github.com/jsnwu/playwright-ai-heal" rel="noopener noreferrer"><strong>playwright-ai-heal</strong></a> with a different
-              order of operations: <strong>local DOM resolver</strong> and <strong>cached heals</strong> first, then optional remote providers (Groq,
-              Ollama, Anthropic, Gemini—see <code>.env.example</code>).
+              The idea still stuck with me after chats at work and posts I read online. I tried
+              <a href="https://github.com/marttinm/playwright-auto-healer" rel="noopener noreferrer">marttinm/playwright-auto-healer</a>—solid
+              LLM-driven healing—and the results were encouraging.
+            </p>
+            <p>
+              I used that as a starting point and shipped
+              <a href="https://github.com/jsnwu/playwright-ai-heal" rel="noopener noreferrer"><strong>playwright-ai-heal</strong></a> with a few
+              changes I wanted: a <strong>local DOM resolver</strong> first (fast, no tokens), <strong>cached heals</strong> from
+              earlier runs, and providers such as <strong>Groq</strong> when you do want a free remote model.
             </p>
 
             <h2>What it does</h2>
             <p>
-              When <code>locator.click</code> or <code>locator.fill</code> fails, the library can retry with a better selector. Healing is layered:
-              reuse what already worked, run heuristics on the live page, then call an LLM if needed. Opt in by importing <code>test</code> (and
-              <code>expect</code>) from <code>playwright-ai-heal</code> instead of <code>@playwright/test</code> so the <code>page</code> fixture can
-              instrument locators. Today only <code>click</code> and <code>fill</code> are wired; other actions would be natural extensions.
+              When a <code>click</code> or <code>fill</code> fails, the library can retry with a better selector. Healing is layered: reuse what
+              already worked, run heuristics on the live page, then call an LLM if needed. You opt in by importing <code>test</code> from
+              <code>playwright-ai-heal</code> instead of <code>@playwright/test</code> so the <code>page</code> fixture can instrument locators.
+            </p>
+            <p>
+              Currently it's only limited to <code>click</code> and <code>fill</code> actions. It can be extended to other actions in the future.
             </p>
 
             <h2>Quick start</h2>
@@ -167,21 +173,24 @@
                 <code>waitFor</code> on the page.
               </li>
             </ol>
-            <p>
-              Artifacts land under <code>.playwright-healer/</code> (temp logs plus merged recommendations). The sample config can run
-              <code>writeHealingReport()</code> from <code>globalTeardown</code> so <code>selector-recommendations.json</code> and a markdown
-              summary stay in sync after <code>npx playwright test</code>.
-            </p>
+            <p>Artifacts land under <code>.playwright-healer/</code> (temp logs plus merged recommendations).</p>
 
-            <h2>What’s next</h2>
+
+            <h2>Future work</h2>
+            <p>
+              I will continue to work on this project to make it more powerful and useful.
+            </p>
             <ul>
-              <li>Extend healing beyond <code>click</code> / <code>fill</code> (e.g. checks, drag, file inputs).</li>
-              <li>CI or PR hooks that surface selector drift from saved recommendations, not only at test time.</li>
+              <li>Add more actions to support</li>
+              <li>Add pull request scanner to detect if there's locator change</li>
             </ul>
 
+            <h2>Conclusion</h2>
             <p>
-              For day-to-day use, the point is to keep most recoveries cheap and local, and treat the LLM as a fallback—not the default path for
-              every action.
+              I am happy to see the project is useful and can help with the flaky locators. It's a simple project to use and can be extended to more actions and features.
+            </p>
+            <p>
+              The cost of token will likely to go down quickly in the future. It's a good idea to start using it to fix the flaky locators and it will reduce the cost of maintenance.
             </p>
 
             <h2>Links</h2>
