@@ -58,29 +58,23 @@
 
             <h2>Intro</h2>
             <p>
-              I am skeptical about leaning on LLMs for test maintenance. Auto-healing sounds convenient, but if every flaky locator triggers a
-              slow round trip to a model, end-to-end suites only get heavier.
+              I am wary of leaning on LLMs for every test fix: auto-healing is tempting, but if each flaky locator means a slow model round trip,
+              suites only get heavier.
             </p>
             <p>
-              The idea still stuck with me after chats at work and posts I read online. I tried
-              <a href="https://github.com/marttinm/playwright-auto-healer" rel="noopener noreferrer">marttinm/playwright-auto-healer</a>—solid
-              LLM-driven healing—and the results were encouraging.
-            </p>
-            <p>
-              I used that as a starting point and shipped
-              <a href="https://github.com/jsnwu/playwright-ai-heal" rel="noopener noreferrer"><strong>playwright-ai-heal</strong></a> with a few
-              changes I wanted: a <strong>local DOM resolver</strong> first (fast, no tokens), <strong>cached heals</strong> from
-              earlier runs, and providers such as <strong>Groq</strong> when you do want a free remote model.
+              I still wanted to try the pattern. <a href="https://github.com/marttinm/playwright-auto-healer" rel="noopener noreferrer">marttinm/playwright-auto-healer</a>
+              is a solid LLM-first take; it worked well enough that I built
+              <a href="https://github.com/jsnwu/playwright-ai-heal" rel="noopener noreferrer"><strong>playwright-ai-heal</strong></a> with a different
+              order of operations: <strong>local DOM resolver</strong> and <strong>cached heals</strong> first, then optional remote providers (Groq,
+              Ollama, Anthropic, Gemini—see <code>.env.example</code>).
             </p>
 
             <h2>What it does</h2>
             <p>
-              When a <code>click</code> or <code>fill</code> fails, the library can retry with a better selector. Healing is layered: reuse what
-              already worked, run heuristics on the live page, then call an LLM if needed. You opt in by importing <code>test</code> from
-              <code>playwright-ai-heal</code> instead of <code>@playwright/test</code> so the <code>page</code> fixture can instrument locators.
-            </p>
-            <p>
-              Currently it's only limited to <code>click</code> and <code>fill</code> actions. It can be extended to other actions in the future.
+              When <code>locator.click</code> or <code>locator.fill</code> fails, the library can retry with a better selector. Healing is layered:
+              reuse what already worked, run heuristics on the live page, then call an LLM if needed. Opt in by importing <code>test</code> (and
+              <code>expect</code>) from <code>playwright-ai-heal</code> instead of <code>@playwright/test</code> so the <code>page</code> fixture can
+              instrument locators. Today only <code>click</code> and <code>fill</code> are wired; other actions would be natural extensions.
             </p>
 
             <h2>Quick start</h2>
@@ -173,28 +167,21 @@
                 <code>waitFor</code> on the page.
               </li>
             </ol>
-            <p>Artifacts land under <code>.playwright-healer/</code> (temp logs plus merged recommendations).</p>
-
-            <h2>Reports</h2>
             <p>
-              <code>writeHealingReport()</code> refreshes <code>selector-recommendations.json</code> and <code>healing-report.md</code> from the temp
-              healing log. The sample <code>playwright.config.ts</code> wires that into <code>globalTeardown</code>, so a normal
-              <code>npx playwright test</code> can keep recommendations current—as long as tests import <code>test</code> from
-              <code>playwright-ai-heal</code>.
+              Artifacts land under <code>.playwright-healer/</code> (temp logs plus merged recommendations). The sample config can run
+              <code>writeHealingReport()</code> from <code>globalTeardown</code> so <code>selector-recommendations.json</code> and a markdown
+              summary stay in sync after <code>npx playwright test</code>.
             </p>
 
-            <h2>Repository layout</h2>
+            <h2>What’s next</h2>
             <ul>
-              <li><code>healer/</code> — library source (TypeScript).</li>
-              <li><code>tests/</code>, <code>pages/</code> — example Playwright + page objects.</li>
-              <li><code>web-page/</code> — static demo app.</li>
+              <li>Extend healing beyond <code>click</code> / <code>fill</code> (e.g. checks, drag, file inputs).</li>
+              <li>CI or PR hooks that surface selector drift from saved recommendations, not only at test time.</li>
             </ul>
 
-            <h2>API surface</h2>
             <p>
-              Beyond wrapped <code>test</code> and <code>expect</code>, exports include <code>AutoHealer</code>, <code>setupAutoHealing</code>,
-              <code>getHealingResults</code>, <code>PlaywrightHealer</code>, <code>withAutoHealing</code>, and <code>writeHealingReport</code>. Types
-              such as <code>HealerConfig</code> and <code>HealingResult</code> are documented in the README.
+              For day-to-day use, the point is to keep most recoveries cheap and local, and treat the LLM as a fallback—not the default path for
+              every action.
             </p>
 
             <h2>Links</h2>
