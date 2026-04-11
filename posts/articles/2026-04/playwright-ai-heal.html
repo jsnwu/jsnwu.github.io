@@ -80,7 +80,11 @@
               <code>playwright-ai-heal</code> instead of <code>@playwright/test</code> so the <code>page</code> fixture can instrument locators.
             </p>
             <p>
-              Currently it's only limited to <code>click</code> and <code>fill</code> actions. It can be extended to other actions in the future.
+              This project is a plug and play library that can be used in any existing Playwright project. The injection of the healing logic can be plugged in at the base test, 
+              or simiply replace the import of test poiting over to the heal folder as shown from the test file.
+            </p>
+            <p>
+              Currently it's only limited to <code>click</code> and <code>fill</code> actions and using locator() to get the element. It can be extended to other actions in the future.
             </p>
 
             <h2>Quick start</h2>
@@ -186,7 +190,7 @@
 
             <h2>Conclusion</h2>
             <p>
-              I am happy to see the project is useful and can help with the flaky locators. It's a simple project to use and can be extended to more actions and features.
+              I am happy to see the project is useful and can help with the flaky or broken locators. It's a simple project to use and can be extended to more actions and features.
             </p>
             <p>
               The cost of token will likely to go down quickly in the future. I think it's totally worthy to try on a large scale project to see the real results.
