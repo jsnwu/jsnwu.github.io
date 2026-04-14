@@ -198,6 +198,46 @@
               <li><strong>Rate limiting</strong>: protect hot endpoints and upstream dependencies.</li>
             </ul>
 
+            <h2>Measuring web performance (manual + CI)</h2>
+            <p>
+              Optimization is easy to do wrong if you don’t measure. For quick manual assessment, I like a small checklist that you can run in a
+              few minutes and repeat consistently.
+            </p>
+
+            <h3>Manual quick assessment</h3>
+            <ul>
+              <li>
+                <strong>Lighthouse (Chrome DevTools)</strong>: run it in an Incognito window (no extensions, cold-ish cache) and focus on a few
+                repeatable numbers: LCP, CLS, total blocking time, and the overall score.
+              </li>
+              <li>
+                <strong>Network tab</strong>: check total request count, the largest assets, and whether static assets are cacheable
+                (<code>Cache-Control</code>, <code>ETag</code>).
+              </li>
+              <li>
+                <strong>Fast reality check</strong>: throttle CPU/network to catch obvious “works on my machine” regressions.
+              </li>
+            </ul>
+
+            <figure class="article-figure">
+              <img
+                src="/assets/img/articles/web-performance/lighthouse-score.png"
+                alt="Chrome Lighthouse performance report with a high performance score and core metrics including FCP, LCP, total blocking time, and CLS."
+              />
+              <figcaption>Lighthouse gives a fast, repeatable snapshot for a single page and device profile.</figcaption>
+            </figure>
+
+            <h3>Automate it daily with Playwright in CI/CD</h3>
+            <p>
+              For ongoing monitoring, you can run performance checks on a schedule (daily) or on key branches. A common pattern is: use Playwright
+              to navigate to a set of URLs, then run Lighthouse against the same pages and publish a small report.
+            </p>
+            <ul>
+              <li><strong>Pick a stable environment</strong>: run against staging or a pinned build to reduce noise.</li>
+              <li><strong>Control variables</strong>: consistent device profile, cache mode, and throttling settings.</li>
+              <li><strong>Track trends</strong>: store results over time; alert on regressions (e.g. LCP p95 > threshold).</li>
+            </ul>
+
             <h2>Wrap-up</h2>
             <p>
               The fastest performance wins tend to come from eliminating repeated work: cache what’s expensive, reduce unnecessary network calls,
