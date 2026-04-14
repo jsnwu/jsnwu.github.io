@@ -70,18 +70,19 @@
               I used that as a starting point and created
               <a href="https://github.com/jsnwu/playwright-ai-heal" rel="noopener noreferrer"><strong>playwright-ai-heal</strong></a> with a few
               changes I wanted: a <strong>local DOM resolver</strong> first (fast, no tokens), <strong>cached heals</strong> from
-              earlier runs, and providers such as <strong>Groq</strong> when you do want a free remote model. It's a simple project to start with and will keep evolving until it meets my needs.
+              earlier runs, and providers such as <strong>Groq</strong> when you do want a free remote model. It's a simple project to start with 
+              and will keep evolving until it meets my needs.
             </p>
 
             <h2>What it does</h2>
             <p>
               When a <code>click</code> or <code>fill</code> fails, the library can retry with a better selector. Healing is layered: reuse what
-              already worked, run heuristics on the live page, then call an LLM if needed. You opt in by importing <code>test</code> from
-              <code>playwright-ai-heal</code> instead of <code>@playwright/test</code> so the <code>page</code> fixture can instrument locators.
+              already worked, run heuristics on the live page, then call an LLM if needed.
             </p>
             <p>
               This project is a plug and play library that can be used in any existing Playwright project. The injection of the healing logic can be plugged in at the base test, 
-              or simiply replace the import of test poiting over to the heal folder as shown from the test file.
+              or simiply replace opt in by importing <code>test</code> from <code>playwright-ai-heal</code> instead of <code>@playwright/test</code> 
+              so the <code>page</code> fixture can instrument locators.
             </p>
             <p>
               Currently it's only limited to <code>click</code> and <code>fill</code> actions and using locator() to get the element. It can be extended to other actions in the future.
@@ -194,6 +195,12 @@
             </p>
             <p>
               The cost of token will likely to go down quickly in the future. I think it's totally worthy to try on a large scale project to see the real results.
+            </p>
+
+            <h2>P.S.</h2>
+            <p>
+              After working on this project, the local resolver can be improved to be more robust and accurate quickly that it matches the suggestion result from the LLM. 
+              It's acting as a buffer before reaching out to the LLM to save the cost and time.
             </p>
 
             <h2>Links</h2>

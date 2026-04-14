@@ -1,5 +1,13 @@
 [
   {
+    "title": "Web app performance optimization: caching, backend, CDN, search, load balancers",
+    "date": "2026-04-14",
+    "tags": ["performance", "caching", "backend", "cdn", "elasticsearch", "load-balancer", "webperf"],
+    "readingTime": "8 min",
+    "description": "A practical checklist for speeding up web apps: caching strategies, backend latency wins, CDN usage, Elasticsearch patterns, and load balancer tuning.",
+    "url": "/posts/articles/2026-04/web-app-performance-optimization.html"
+  },
+  {
     "title": "Playwright Locator Auto Heal (Local and AI)",
     "date": "2026-04-10",
     "tags": ["playwright", "typescript", "ai", "testing", "auto-healing", "e2e", "ollama"],

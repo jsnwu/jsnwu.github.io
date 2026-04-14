@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <script>
+      try {
+        var bootTheme = localStorage.getItem("theme");
+        if (bootTheme === "light" || bootTheme === "dark") document.documentElement.dataset.theme = bootTheme;
+        if (localStorage.getItem("siteSidebarCollapsed") === "1") document.documentElement.dataset.sidebarCollapsed = "true";
+      } catch (err) {}
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Web app performance optimization: caching, backend, CDN, search, load balancers · Jason Wu</title>
+    <meta
+      name="description"
+      content="A practical performance checklist: caching (browser→backend), backend latency wins, CDN strategy, Elasticsearch patterns, and load balancer tuning."
+    />
+    <link rel="stylesheet" href="/assets/css/style.css" />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <div class="app">
+      <aside class="sidebar" id="site-sidebar" aria-label="Sidebar" data-include="/assets/partials/sidebar.html"></aside>
+
+      <header class="topbar" aria-label="Top bar">
+        <div class="topbar__inner">
+          <div class="topbar__lead">
+            <div data-include="/assets/partials/topbar-menu.html"></div>
+            <div
+              data-include="/assets/partials/topbar-crumb.html"
+              data-breadcrumb='[{"text":"Home","href":"/"},{"text":"Posts","href":"/posts/"},{"text":"Web app performance optimization"}]'
+            ></div>
+          </div>
+          <div class="topbar__tools">
+            <div data-include="/assets/partials/topbar-theme.html"></div>
+            <div data-include="/assets/partials/topbar-search.html"></div>
+          </div>
+        </div>
+      </header>
+
+      <main id="main" class="main" tabindex="-1">
+        <div class="main-inner">
+          <article class="content" data-article>
+            <header class="post-header">
+              <h1 class="post-title">Web app performance optimization: caching, backend, CDN, search, load balancers</h1>
+              <div class="post-meta">
+                <span class="pill">Apr 14, 2026</span>
+                <span class="pill">#Performance</span>
+                <span class="pill">#Caching</span>
+                <span class="pill">#Backend</span>
+                <span class="pill">#CDN</span>
+                <span class="pill">#Elasticsearch</span>
+                <span class="pill">#LoadBalancer</span>
+                <span class="pill">8 min</span>
+              </div>
+            </header>
+
+            <h2>Intro</h2>
+            <p>
+              When a web app is “slow”, it’s usually not one thing. It’s a stack of small delays: extra network round trips, heavy assets,
+              inefficient queries, repeated work in the backend, and hot endpoints that don’t scale under load.
+            </p>
+            <p>
+              This post is a practical checklist from five angles that tend to move the needle the most:
+              <strong>caching</strong>, <strong>backend performance</strong>, <strong>CDN</strong>, <strong>Elasticsearch</strong>, and
+              <strong>load balancers</strong>.
+            </p>
+
+            <h2>1) Implement effective caching strategies</h2>
+            <p>
+              Caching is “store work once, reuse it later”. The key is to cache <em>the right thing</em> at <em>the right layer</em>, with a clear
+              invalidation story.
+            </p>
+
+            <h3>Browser / HTTP caching</h3>
+            <ul>
+              <li>
+                <strong>Static assets</strong> (CSS/JS/images/fonts): cache aggressively with long <code>max-age</code> and versioned filenames
+                (or querystrings) so you can invalidate by deploy.
+              </li>
+              <li>
+                <strong>API GET responses</strong>: use <code>ETag</code> (or <code>Last-Modified</code>) and conditional requests so repeat
+                navigations become cheap.
+              </li>
+              <li>
+                <strong><code>stale-while-revalidate</code></strong>: serve a slightly stale response immediately while revalidating in the
+                background for a smoother UX.
+              </li>
+            </ul>
+            <pre class="pre--dedent"><code>
+              Cache-Control: public, max-age=3600, stale-while-revalidate=600
+            </code></pre>
+
+            <h3>Backend / server-side caching</h3>
+            <ul>
+              <li>
+                <strong>In-memory</strong>: fastest, simplest, but per-instance and limited by RAM (good for config, small lookups, hot computed
+                values).
+              </li>
+              <li>
+                <strong>Distributed</strong> (Redis/Memcached): shared across instances; better for scaled services and consistent hit rates.
+              </li>
+              <li>
+                <strong>Cache the “expensive shape”</strong>: cache rendered fragments, aggregated API payloads, or “materialized” results rather
+                than raw rows.
+              </li>
+            </ul>
+
+            <h3>Cache invalidation (the part that bites)</h3>
+            <ul>
+              <li><strong>TTL</strong>: easy; accept short staleness windows.</li>
+              <li><strong>Write-through</strong>: update cache and DB together for hot writes.</li>
+              <li><strong>Versioned keys</strong>: prefix cache keys by schema or rollout version (e.g. <code>v2:product:123</code>).</li>
+              <li><strong>Explicit invalidation</strong>: publish “entity updated” events to clear/refresh dependent keys.</li>
+            </ul>
+
+            <h2>2) Improve backend performance</h2>
+            <p>
+              Backends feel slow because of latency (time spent waiting) or throughput limits (time spent working). The common wins:
+            </p>
+
+            <h3>Measure first</h3>
+            <ul>
+              <li><strong>Trace requests</strong>: where is time spent—DB, cache, external API, serialization?</li>
+              <li><strong>Log slow queries</strong>: collect query text + params + timing.</li>
+              <li><strong>Track p95/p99</strong>: averages hide tail latency.</li>
+            </ul>
+
+            <h3>Database: fewer round trips, better plans</h3>
+            <ul>
+              <li><strong>Indexes that match access patterns</strong> (especially composite indexes for multi-column filters).</li>
+              <li><strong>Kill N+1s</strong>: batch, join, or prefetch.</li>
+              <li><strong>Pagination</strong>: prefer keyset (cursor) pagination for large tables over large offsets.</li>
+              <li><strong>Connection pooling</strong>: keep pools sized for DB limits; avoid connection churn under bursty traffic.</li>
+            </ul>
+
+            <h3>API shape and concurrency</h3>
+            <ul>
+              <li><strong>Batch calls</strong>: fewer requests often beats smaller payloads.</li>
+              <li><strong>Async work</strong>: move slow side effects to queues and return quickly.</li>
+              <li><strong>Compression</strong>: use Brotli/Gzip where it helps (HTML/JS/CSS; be careful with already-compressed binaries).</li>
+            </ul>
+
+            <h2>3) CDN: reduce latency and protect the origin</h2>
+            <p>
+              A CDN is not just for images. It’s a latency reducer, bandwidth saver, and an origin shield.
+            </p>
+            <ul>
+              <li><strong>Cache static assets</strong> close to users; remove repeated origin downloads.</li>
+              <li><strong>Use edge caching</strong> for semi-dynamic responses (careful with auth/cookies).</li>
+              <li><strong>Origin shielding</strong>: protect your app from thundering herds on cold caches or traffic spikes.</li>
+              <li><strong>Modern protocols</strong>: enable HTTP/2 and HTTP/3 where possible; multiplexing reduces connection overhead.</li>
+            </ul>
+
+            <h2>4) Elasticsearch: fast search without melting your DB</h2>
+            <p>
+              If your app has “search” that reads like analytics (multi-field filtering, partial text, relevance), pushing it onto the OLTP
+              database usually backfires. Elasticsearch is great when you treat it as a <strong>derived index</strong>.
+            </p>
+
+            <h3>Patterns that work well</h3>
+            <ul>
+              <li>
+                <strong>Write model ≠ read model</strong>: keep DB normalized; index a denormalized document for search.
+              </li>
+              <li>
+                <strong>Async indexing</strong>: use an outbox/queue so search indexing doesn’t block request latency.
+              </li>
+              <li>
+                <strong>Filter-first queries</strong>: use keyword fields for filters, full-text fields for relevance, and avoid expensive wildcard
+                patterns on large datasets.
+              </li>
+              <li>
+                <strong>Cache results carefully</strong>: cache common queries (or popular facets) with short TTLs to absorb spikes.
+              </li>
+            </ul>
+
+            <h3>Scaling tips</h3>
+            <ul>
+              <li><strong>Keep mappings stable</strong>: frequent mapping changes cause reindex pain.</li>
+              <li><strong>Shards are not free</strong>: start small; scale shards with data size and query concurrency.</li>
+              <li><strong>Protect with rate limits</strong>: search endpoints are easy to abuse.</li>
+            </ul>
+
+            <h2>5) Load balancers: throughput, availability, and tail latency</h2>
+            <p>
+              A load balancer should make your app more reliable. Misconfiguration can do the opposite—especially under retries and connection
+              churn.
+            </p>
+            <ul>
+              <li><strong>Health checks</strong>: make them representative (cheap, but real). Ensure instances drain properly on deploy.</li>
+              <li><strong>Sticky sessions</strong>: avoid unless required. Prefer stateless servers + shared session store.</li>
+              <li><strong>Timeouts</strong>: set sensible client, LB, and server timeouts; avoid “infinite waits” that tie up resources.</li>
+              <li><strong>Keep-alive</strong>: reuse connections; reduce TLS handshake overhead.</li>
+              <li><strong>Rate limiting</strong>: protect hot endpoints and upstream dependencies.</li>
+            </ul>
+
+            <h2>Wrap-up</h2>
+            <p>
+              The fastest performance wins tend to come from eliminating repeated work: cache what’s expensive, reduce unnecessary network calls,
+              and make “hot paths” predictable under load. Start with measurement, pick the highest-leverage bottleneck, and iterate.
+            </p>
+
+            <h2>Further reading</h2>
+            <ul>
+              <li>
+                <a href="https://www.hostinger.com/tutorials/web-app-performance-optimization" rel="noopener noreferrer"
+                  >Web app performance optimization: Tips to speed up your web app</a
+                >
+              </li>
+              <li>
+                <a href="https://dev.to/fazal_mansuri_/caching-strategies-for-web-apps-from-browser-to-backend-38nj" rel="noopener noreferrer"
+                  >Caching Strategies for Web Apps: From Browser to Backend</a
+                >
+              </li>
+            </ul>
+          </article>
+
+          <aside class="rail" aria-label="Right rail" data-include="/assets/partials/rail-post.html"></aside>
+        </div>
+      </main>
+    </div>
+
+    <script src="/assets/js/main.js" defer></script>
+  </body>
+</html>
