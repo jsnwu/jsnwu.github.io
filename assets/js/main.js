@@ -982,6 +982,172 @@ function initYear() {
   if (el) el.textContent = String(new Date().getFullYear());
 }
 
+function initProjectShotCarousels() {
+  const prefersReduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)");
+  const reduceMotion = !!(prefersReduce && prefersReduce.matches);
+  const canHover = window.matchMedia && window.matchMedia("(hover: hover)").matches;
+
+  document.querySelectorAll("[data-project-shot-carousel]").forEach((root) => {
+    const imgs = [...root.querySelectorAll("[data-project-shot-img]")];
+    const btn = root.closest(".project-shot")?.querySelector("[data-project-shot-next]");
+    if (!btn || imgs.length <= 1) return;
+
+    const loopAttr = String(root.getAttribute("data-carousel-loop") || "").trim().toLowerCase();
+    const loop = !(loopAttr === "false" || loopAttr === "0" || loopAttr === "no");
+
+    // Small, fixed set of images: eagerly load/decode to avoid flicker on wrap-around.
+    imgs.forEach((img) => {
+      try {
+        img.loading = "eager";
+        img.decoding = "async";
+        if (typeof img.decode === "function") {
+          img.decode().catch(() => {});
+        }
+      } catch {
+        //
+      }
+    });
+
+    let idx = 0;
+    let hoverTimer = 0;
+    let hoverInterval = 0;
+    let switching = false;
+
+    const slideTo = (fromIdx, toIdx) => {
+      const prev = imgs[fromIdx];
+      const next = imgs[toIdx];
+      if (!prev || !next || prev === next) return;
+
+      // Stop any in-flight animations and reset.
+      prev.getAnimations().forEach((a) => a.cancel());
+      next.getAnimations().forEach((a) => a.cancel());
+
+      // Ensure both are "present" so there is no flash on wrap-around.
+      prev.toggleAttribute("data-active", true);
+      next.toggleAttribute("data-active", true);
+
+      // Pre-position the incoming slide before starting the animation (avoids a 1-frame flash).
+      next.style.opacity = "0";
+      next.style.transform = "translate3d(-18%, 0, 0)";
+      prev.style.opacity = "1";
+      prev.style.transform = "translate3d(0%, 0, 0)";
+
+      requestAnimationFrame(() => {
+        const SLIDE_MS = 900;
+        const prevAnim = prev.animate(
+          [
+            { transform: "translate3d(0%, 0, 0)", opacity: 1 },
+            { transform: "translate3d(18%, 0, 0)", opacity: 0 },
+          ],
+          { duration: SLIDE_MS, easing: "cubic-bezier(0.34, 1.1, 0.64, 1)", fill: "forwards" }
+        );
+        const nextAnim = next.animate(
+          [
+            { transform: "translate3d(-18%, 0, 0)", opacity: 0 },
+            { transform: "translate3d(0%, 0, 0)", opacity: 1 },
+          ],
+          { duration: SLIDE_MS, easing: "cubic-bezier(0.34, 1.1, 0.64, 1)", fill: "forwards" }
+        );
+
+        Promise.allSettled([prevAnim.finished, nextAnim.finished]).then(() => {
+          // Commit final keyframe styles to avoid a cancel->snap flicker (notably on wrap-around).
+          try {
+            if (typeof prevAnim.commitStyles === "function") prevAnim.commitStyles();
+            if (typeof nextAnim.commitStyles === "function") nextAnim.commitStyles();
+          } catch {
+            //
+          }
+          prevAnim.cancel();
+          nextAnim.cancel();
+
+          // Now update active state. We clear inline styles on the next frame so the DOM state
+          // change doesn't briefly fight with a style reset (which can look like a resize bounce).
+          prev.toggleAttribute("data-active", false);
+          next.toggleAttribute("data-active", true);
+
+          requestAnimationFrame(() => {
+            prev.style.removeProperty("opacity");
+            prev.style.removeProperty("transform");
+            next.style.removeProperty("opacity");
+            next.style.removeProperty("transform");
+            switching = false;
+          });
+        });
+      });
+    };
+
+    const setActive = (nextIdx) => {
+      if (!loop && nextIdx >= imgs.length) return;
+      if (!loop && nextIdx < 0) return;
+
+      const next = loop
+        ? ((nextIdx % imgs.length) + imgs.length) % imgs.length
+        : Math.min(imgs.length - 1, Math.max(0, nextIdx));
+      const prev = idx;
+      idx = next;
+
+      if (prev === idx) {
+        imgs.forEach((img, i) => img.toggleAttribute("data-active", i === idx));
+        switching = false;
+        return;
+      }
+
+      if (reduceMotion) {
+        imgs.forEach((img, i) => img.toggleAttribute("data-active", i === idx));
+        switching = false;
+      } else {
+        if (switching) return;
+        switching = true;
+        slideTo(prev, idx);
+      }
+      if (!reduceMotion) {
+        btn.animate([{ transform: "rotate(0deg)" }, { transform: "rotate(18deg)" }, { transform: "rotate(0deg)" }], {
+          duration: 280,
+          easing: "cubic-bezier(0.34, 1.1, 0.64, 1)",
+        });
+      }
+    };
+
+    setActive(0);
+
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setActive(idx + 1);
+    });
+
+    if (canHover && !reduceMotion) {
+      const startHoverCycle = () => {
+        if (hoverInterval || hoverTimer) return;
+        hoverTimer = window.setTimeout(() => {
+          hoverTimer = 0;
+          const before = idx;
+          setActive(idx + 1);
+          if (!loop && idx === before) return;
+          hoverInterval = window.setInterval(() => {
+            const prev = idx;
+            setActive(idx + 1);
+            if (!loop && idx === prev) {
+              window.clearInterval(hoverInterval);
+              hoverInterval = 0;
+            }
+          }, 2500);
+        }, 1000);
+      };
+      const stopHoverCycle = () => {
+        if (hoverTimer) window.clearTimeout(hoverTimer);
+        if (hoverInterval) window.clearInterval(hoverInterval);
+        hoverTimer = 0;
+        hoverInterval = 0;
+      };
+
+      root.addEventListener("pointerenter", startHoverCycle, { passive: true });
+      root.addEventListener("pointerleave", stopHoverCycle, { passive: true });
+      root.addEventListener("pointerdown", stopHoverCycle, { passive: true });
+    }
+  });
+}
+
 function wireThemeButtons() {
   document.querySelectorAll("[data-theme-toggle]").forEach((btn) => {
     btn.addEventListener("click", toggleTheme);
@@ -1445,5 +1611,6 @@ function initSidebarNavActive() {
   initToc();
   await initTagsManager();
   initYear();
+  initProjectShotCarousels();
 })();
 

@@ -676,6 +676,41 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
     opacity 0.4s ease,
     transform 0.45s cubic-bezier(0.34, 1.1, 0.64, 1);
 }
+.projects__grid .project-shot{
+  position: relative;
+}
+.projects__grid .project-shot__btn{
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--text);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  transform: translate(4px, -4px) scale(0.92);
+  transition:
+    opacity 0.4s ease,
+    transform 0.45s cubic-bezier(0.34, 1.1, 0.64, 1);
+}
+.projects__grid .project-shot__btn:hover,
+.projects__grid .project-shot__btn:focus-visible{
+  opacity: 1;
+  transform: translate(0, 0) scale(1);
+}
+.projects__grid .project-shot__btn:focus-visible{
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 .projects__grid .project-shot__link:hover,
 .projects__grid .project-shot__link:focus-visible{
   text-decoration: none;
@@ -709,26 +744,63 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
     filter 0.58s ease,
     box-shadow 0.65s ease;
 }
-.projects__grid .project-shot__link:hover img,
-.projects__grid .project-shot__link:focus-visible img{
+.projects__grid .project-shot__carousel{
+  display: block;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: color-mix(in srgb, var(--panel) 94%, var(--bg));
+  overflow: hidden;
+  contain: paint;
+}
+.projects__grid .project-shot__carousel img{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transform: translate3d(0, 0, 0);
+  transition: opacity 0.18s ease;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+.projects__grid .project-shot__carousel img[data-active]{
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+.projects__grid .project-shot__link:hover > img,
+.projects__grid .project-shot__link:focus-visible > img{
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
   transform: scale(1.028);
   filter: brightness(1.04) saturate(1.06);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent);
 }
+.projects__grid .project-shot:hover .project-shot__btn,
+.projects__grid .project-shot:focus-within .project-shot__btn{
+  opacity: 1;
+  transform: translate(0, 0) scale(1);
+}
+.projects__grid .project-shot__link:hover .project-shot__carousel,
+.projects__grid .project-shot__link:focus-visible .project-shot__carousel{
+  filter: brightness(1.02) saturate(1.04);
+}
 
 @media (prefers-reduced-motion: reduce){
   .projects__grid .project-shot__link,
+  .projects__grid .project-shot__btn,
   .projects__grid .project-shot__link::after,
-  .projects__grid .project-shot img{
+  .projects__grid .project-shot img,
+  .projects__grid .project-shot__carousel,
+  .projects__grid .project-shot__carousel img{
     transition-duration: 0.01ms;
   }
   .projects__grid .project-shot__link:hover::after,
   .projects__grid .project-shot__link:focus-visible::after{
     transform: none;
   }
-  .projects__grid .project-shot__link:hover img,
-  .projects__grid .project-shot__link:focus-visible img{
+  .projects__grid .project-shot__link:hover > img,
+  .projects__grid .project-shot__link:focus-visible > img{
     transform: none;
     filter: none;
   }
