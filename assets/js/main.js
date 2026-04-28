@@ -982,36 +982,77 @@ function initYear() {
   if (el) el.textContent = String(new Date().getFullYear());
 }
 
+function initScrollingStateHint() {
+  let t = 0;
+  const root = document.documentElement;
+  const set = () => {
+    root.dataset.scrolling = "true";
+    if (t) window.clearTimeout(t);
+    t = window.setTimeout(() => {
+      delete root.dataset.scrolling;
+      t = 0;
+    }, 160);
+  };
+  window.addEventListener("scroll", set, { passive: true });
+}
+
 function initProjectShotCarousels() {
   const prefersReduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)");
   const reduceMotion = !!(prefersReduce && prefersReduce.matches);
   const canHover = window.matchMedia && window.matchMedia("(hover: hover)").matches;
+  let lastScrollAt = 0;
+  const markScroll = () => {
+    lastScrollAt = performance.now();
+  };
+  window.addEventListener("scroll", markScroll, { passive: true });
+  const isScrolling = () => performance.now() - lastScrollAt < 180;
 
   document.querySelectorAll("[data-project-shot-carousel]").forEach((root) => {
     const imgs = [...root.querySelectorAll("[data-project-shot-img]")];
     const btn = root.closest(".project-shot")?.querySelector("[data-project-shot-next]");
+    const toggleBtn = root.closest(".project-shot")?.querySelector("[data-project-shot-toggle]");
+    const shot = root.closest(".project-shot");
     if (!btn || imgs.length <= 1) return;
 
     const loopAttr = String(root.getAttribute("data-carousel-loop") || "").trim().toLowerCase();
     const loop = !(loopAttr === "false" || loopAttr === "0" || loopAttr === "no");
 
-    // Small, fixed set of images: eagerly load/decode to avoid flicker on wrap-around.
-    imgs.forEach((img) => {
+    // Avoid decoding large screenshots during initial scroll/paint.
+    // Decode the active frame immediately, and opportunistically pre-decode the next one in idle time.
+    const decoded = new WeakSet();
+    const decodeImage = (img) => {
+      if (!img || decoded.has(img)) return;
+      decoded.add(img);
       try {
-        img.loading = "eager";
-        img.decoding = "async";
-        if (typeof img.decode === "function") {
-          img.decode().catch(() => {});
-        }
+        if (typeof img.decode === "function") img.decode().catch(() => {});
       } catch {
         //
       }
-    });
+    };
+    const idle = (fn) => {
+      if (typeof window.requestIdleCallback === "function") return window.requestIdleCallback(fn, { timeout: 1200 });
+      return window.setTimeout(fn, 120);
+    };
 
     let idx = 0;
     let hoverTimer = 0;
     let hoverInterval = 0;
     let switching = false;
+    let paused = false;
+    let hovering = false;
+    let resumeAfterScrollTimer = 0;
+
+    const setPaused = (nextPaused) => {
+      paused = !!nextPaused;
+      if (shot) shot.dataset.paused = paused ? "true" : "false";
+      if (toggleBtn) {
+        toggleBtn.setAttribute("aria-label", paused ? "Resume slideshow" : "Pause slideshow");
+        const icon = toggleBtn.querySelector(".project-shot__pause-icon");
+        if (icon) icon.textContent = paused ? "▶" : "❚❚";
+      }
+      if (paused) stopHoverCycle();
+      else if (hovering && canHover && !reduceMotion && !isScrolling()) startHoverCycle();
+    };
 
     const slideTo = (fromIdx, toIdx) => {
       const prev = imgs[fromIdx];
@@ -1088,12 +1129,14 @@ function initProjectShotCarousels() {
 
       if (prev === idx) {
         imgs.forEach((img, i) => img.toggleAttribute("data-active", i === idx));
+        decodeImage(imgs[idx]);
         switching = false;
         return;
       }
 
       if (reduceMotion) {
         imgs.forEach((img, i) => img.toggleAttribute("data-active", i === idx));
+        decodeImage(imgs[idx]);
         switching = false;
       } else {
         if (switching) return;
@@ -1109,41 +1152,88 @@ function initProjectShotCarousels() {
     };
 
     setActive(0);
+    setPaused(false);
+    idle(() => decodeImage(imgs[(idx + 1) % imgs.length]));
 
     btn.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
       setActive(idx + 1);
+      idle(() => decodeImage(imgs[(idx + 1) % imgs.length]));
     });
 
+    if (toggleBtn) {
+      toggleBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setPaused(!paused);
+      });
+    }
+
+    function stopHoverCycle() {
+      if (hoverTimer) window.clearTimeout(hoverTimer);
+      if (hoverInterval) window.clearInterval(hoverInterval);
+      hoverTimer = 0;
+      hoverInterval = 0;
+    }
+
+    let startHoverCycle = () => {};
     if (canHover && !reduceMotion) {
-      const startHoverCycle = () => {
+      const hoverHost = shot || root;
+      startHoverCycle = () => {
+        if (paused) return;
+        if (isScrolling()) return;
         if (hoverInterval || hoverTimer) return;
         hoverTimer = window.setTimeout(() => {
           hoverTimer = 0;
+          if (paused) return;
+          if (isScrolling()) return;
           const before = idx;
           setActive(idx + 1);
           if (!loop && idx === before) return;
+          idle(() => decodeImage(imgs[(idx + 1) % imgs.length]));
           hoverInterval = window.setInterval(() => {
+            if (paused) {
+              window.clearInterval(hoverInterval);
+              hoverInterval = 0;
+              return;
+            }
+            if (isScrolling()) {
+              window.clearInterval(hoverInterval);
+              hoverInterval = 0;
+              return;
+            }
             const prev = idx;
             setActive(idx + 1);
             if (!loop && idx === prev) {
               window.clearInterval(hoverInterval);
               hoverInterval = 0;
             }
+            idle(() => decodeImage(imgs[(idx + 1) % imgs.length]));
           }, 2500);
         }, 1000);
       };
-      const stopHoverCycle = () => {
-        if (hoverTimer) window.clearTimeout(hoverTimer);
-        if (hoverInterval) window.clearInterval(hoverInterval);
-        hoverTimer = 0;
-        hoverInterval = 0;
-      };
 
-      root.addEventListener("pointerenter", startHoverCycle, { passive: true });
-      root.addEventListener("pointerleave", stopHoverCycle, { passive: true });
-      root.addEventListener("pointerdown", stopHoverCycle, { passive: true });
+      hoverHost.addEventListener("pointerenter", () => {
+        hovering = true;
+        startHoverCycle();
+      }, { passive: true });
+      hoverHost.addEventListener("pointerleave", () => {
+        hovering = false;
+        stopHoverCycle();
+      }, { passive: true });
+      hoverHost.addEventListener("pointerdown", stopHoverCycle, { passive: true });
+      window.addEventListener("scroll", () => {
+        stopHoverCycle();
+        if (resumeAfterScrollTimer) window.clearTimeout(resumeAfterScrollTimer);
+        resumeAfterScrollTimer = window.setTimeout(() => {
+          resumeAfterScrollTimer = 0;
+          if (!hovering) return;
+          if (paused) return;
+          if (isScrolling()) return;
+          startHoverCycle();
+        }, 220);
+      }, { passive: true });
     }
   });
 }
@@ -1611,6 +1701,7 @@ function initSidebarNavActive() {
   initToc();
   await initTagsManager();
   initYear();
+  initScrollingStateHint();
   initProjectShotCarousels();
 })();
 
