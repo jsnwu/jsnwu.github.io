@@ -515,34 +515,113 @@ function initSidebarToggle() {
   closeOverlayIfDesktop();
 }
 
+/** Desktop sidebar: collapse when the window is in this band (min matches fixed nav; max frees content width). */
+const SIDEBAR_AUTO_COLLAPSE_MQ = "(min-width: 821px) and (max-width: 1180px)";
+
 function initSidebarCollapse() {
   const btn = document.querySelector("[data-sidebar-collapse]");
   if (!btn) return;
 
   const icon = btn.querySelector("[data-sidebar-collapse-icon]");
-
   const root = document.documentElement;
-  const apply = (collapsed) => {
+
+  let autoNarrowCollapse = false;
+  let userDismissedNarrowAuto = false;
+
+  const readLsCollapsed = () => {
+    try {
+      return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1";
+    } catch {
+      return false;
+    }
+  };
+
+  const applySidebarCollapsed = (collapsed, { persist = true, instant = false } = {}) => {
+    if (!instant) {
+      delete root.dataset.sidebarCollapseInstant;
+    } else {
+      root.dataset.sidebarCollapseInstant = "true";
+    }
+
     if (collapsed) root.dataset.sidebarCollapsed = "true";
     else delete root.dataset.sidebarCollapsed;
     btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
     btn.setAttribute("aria-label", collapsed ? "Expand sidebar" : "Collapse sidebar");
     btn.setAttribute("title", collapsed ? "Expand sidebar" : "Collapse sidebar");
     if (icon) icon.textContent = collapsed ? "»" : "«";
-    try {
-      if (collapsed) localStorage.setItem(SIDEBAR_COLLAPSED_KEY, "1");
-      else localStorage.removeItem(SIDEBAR_COLLAPSED_KEY);
-    } catch {}
+    if (persist) {
+      try {
+        if (collapsed) localStorage.setItem(SIDEBAR_COLLAPSED_KEY, "1");
+        else localStorage.removeItem(SIDEBAR_COLLAPSED_KEY);
+      } catch {}
+    }
+
+    if (instant) {
+      void root.offsetHeight;
+      requestAnimationFrame(() => {
+        delete root.dataset.sidebarCollapseInstant;
+      });
+    }
+  };
+
+  const mqDesktop = window.matchMedia("(min-width: 821px)");
+  const mqNarrowDesktop = window.matchMedia(SIDEBAR_AUTO_COLLAPSE_MQ);
+
+  const syncAutoNarrowCollapse = () => {
+    if (!mqDesktop.matches) {
+      if (autoNarrowCollapse) {
+        autoNarrowCollapse = false;
+        applySidebarCollapsed(readLsCollapsed(), { persist: false, instant: true });
+      }
+      return;
+    }
+
+    if (!mqNarrowDesktop.matches) {
+      userDismissedNarrowAuto = false;
+      if (autoNarrowCollapse) {
+        autoNarrowCollapse = false;
+        applySidebarCollapsed(readLsCollapsed(), { persist: false, instant: true });
+      }
+      return;
+    }
+
+    if (userDismissedNarrowAuto) return;
+
+    if (root.dataset.sidebarCollapsed !== "true") {
+      autoNarrowCollapse = true;
+      applySidebarCollapsed(true, { persist: false, instant: true });
+    }
   };
 
   try {
-    if (localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1") apply(true);
+    if (readLsCollapsed()) applySidebarCollapsed(true, { persist: true });
   } catch {}
+
+  syncAutoNarrowCollapse();
 
   btn.addEventListener("click", () => {
     const next = root.dataset.sidebarCollapsed !== "true";
-    apply(next);
+    if (mqDesktop.matches && mqNarrowDesktop.matches) {
+      if (!next) {
+        userDismissedNarrowAuto = true;
+        autoNarrowCollapse = false;
+      } else {
+        userDismissedNarrowAuto = false;
+      }
+    } else {
+      userDismissedNarrowAuto = false;
+    }
+    applySidebarCollapsed(next, { persist: true });
   });
+
+  const onMqChange = () => syncAutoNarrowCollapse();
+  if (typeof mqDesktop.addEventListener === "function") {
+    mqDesktop.addEventListener("change", onMqChange);
+    mqNarrowDesktop.addEventListener("change", onMqChange);
+  } else {
+    mqDesktop.addListener(onMqChange);
+    mqNarrowDesktop.addListener(onMqChange);
+  }
 }
 
 async function loadPosts() {
@@ -660,12 +739,19 @@ async function initLatestPosts() {
   const host = document.querySelector("[data-latest-posts]");
   if (!host) return;
 
+  const limitRaw = host.getAttribute("data-latest-limit");
+  let limit = 5;
+  if (limitRaw != null && String(limitRaw).trim() !== "") {
+    const n = parseInt(String(limitRaw), 10);
+    if (!Number.isNaN(n) && n > 0) limit = Math.min(n, 50);
+  }
+
   try {
     const posts = await loadPosts();
     posts
       .slice()
       .sort((a, b) => (String(b.date || "")).localeCompare(String(a.date || "")))
-      .slice(0, 5)
+      .slice(0, limit)
       .forEach((p) => host.appendChild(renderPostCard(p)));
 
     if (!host.childElementCount) {
@@ -1296,16 +1382,19 @@ function renderTagChip(tag, count, { active = false, keepSearch = "" } = {}) {
 }
 
 function initTrendingTags() {
-  const host = document.querySelector("[data-trending-tags]");
-  if (!host) return;
+  const hosts = [...document.querySelectorAll("[data-trending-tags]")];
+  if (!hosts.length) return;
 
   loadPosts()
     .then((posts) => {
       const tagCounts = countTags(posts);
       const top = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
-      host.innerHTML = "";
+      const emptyHtml = `<div class="muted">No tags yet.</div>`;
+
       if (!top.length) {
-        host.innerHTML = `<div class="muted">No tags yet.</div>`;
+        hosts.forEach((h) => {
+          h.innerHTML = emptyHtml;
+        });
         return;
       }
       const cloud = document.createElement("div");
@@ -1314,10 +1403,15 @@ function initTrendingTags() {
         const chip = renderTagChip(tag, count);
         if (chip) cloud.appendChild(chip);
       });
-      host.appendChild(cloud);
+      hosts.forEach((h) => {
+        h.innerHTML = "";
+        h.appendChild(cloud.cloneNode(true));
+      });
     })
     .catch(() => {
-      host.innerHTML = `<div class="muted">Could not load tags.</div>`;
+      hosts.forEach((h) => {
+        h.innerHTML = `<div class="muted">Could not load tags.</div>`;
+      });
     });
 }
 

@@ -12,7 +12,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark light" />
     <title>Jason Wu</title>
-    <meta name="description" content="Notes and posts." />
+    <meta name="description" content="Overview of posts, projects, and about—notes on building, testing, and scaling web apps." />
     <link rel="stylesheet" href="/assets/css/style.css" />
     <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
   </head>
@@ -36,18 +36,109 @@
       </header>
 
       <main id="main" class="main" tabindex="-1">
-        <div class="main-inner">
-          <div>
-            <section class="section">
-              <div class="section__head">
-                <h2 class="section__title">Posts</h2>
-                <a class="section__link" href="/posts/">All posts →</a>
-              </div>
-              <div class="cards" data-latest-posts aria-live="polite"></div>
-            </section>
-          </div>
+        <div class="main-inner main-inner--no-rail">
+          <div class="home-dashboard">
+            <header class="home-intro">
+              <h1 class="home-intro__title">Jason Wu</h1>
+              <p class="home-intro__lede">
+                Software engineer focused on scalable web applications, quality, and using AI thoughtfully in the development life cycle.
+              </p>
+            </header>
 
-          <aside class="rail" aria-label="Right rail" data-include="/assets/partials/rail-default.html"></aside>
+            <div class="home-panels" aria-label="Site sections">
+              <section class="home-panel home-panel--projects" aria-labelledby="home-panel-projects">
+                <div class="home-panel__head">
+                  <h2 id="home-panel-projects" class="home-panel__title">Projects</h2>
+                  <a class="home-panel__link" href="/projects/">All projects →</a>
+                </div>
+                <ul class="home-projects-grid">
+                  <li>
+                    <a class="home-project-tile" href="/projects/#spelling-bee-studio">
+                      <span class="home-project-tile__title">Spelling Bee Studio</span>
+                      <span class="home-project-tile__shot">
+                        <img
+                          src="/assets/img/projects/spelling-bee/spelling-bee-studio.png"
+                          width="512"
+                          height="470"
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </span>
+                      <span class="home-project-tile__desc">Word practice for students; runs offline in the browser.</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a class="home-project-tile" href="/projects/#test-dashboard">
+                      <span class="home-project-tile__title">Test Dashboard</span>
+                      <span class="home-project-tile__shot">
+                        <img
+                          src="/assets/img/projects/test-dashboard/dashboard.png"
+                          width="512"
+                          height="320"
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </span>
+                      <span class="home-project-tile__desc">Playwright runs, history, logs, screenshots, and traces.</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a class="home-project-tile" href="/projects/#slice-dice">
+                      <span class="home-project-tile__title">Slice Dice</span>
+                      <span class="home-project-tile__shot">
+                        <img
+                          src="/assets/img/projects/slice-dice/slice-dice-menu.jpg"
+                          width="512"
+                          height="419"
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </span>
+                      <span class="home-project-tile__desc">Next.js + Django on AWS Fargate; menu, cart, and tracking.</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a class="home-project-tile" href="/projects/#ui-play">
+                      <span class="home-project-tile__title">ui-play</span>
+                      <span class="home-project-tile__shot">
+                        <img
+                          src="/assets/img/projects/ui-play/ui-play-debug.png"
+                          width="512"
+                          height="333"
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </span>
+                      <span class="home-project-tile__desc">Text-driven UI recorder and player on Playwright.</span>
+                    </a>
+                  </li>
+                </ul>
+              </section>
+
+              <section class="home-panel home-panel--posts" aria-labelledby="home-panel-posts">
+                <div class="home-panel__head">
+                  <h2 id="home-panel-posts" class="home-panel__title">Latest posts</h2>
+                  <a class="home-panel__link" href="/posts/">All posts →</a>
+                </div>
+                <div class="cards" data-latest-posts data-latest-limit="4" aria-live="polite"></div>
+              </section>
+
+              <section class="home-panel" aria-labelledby="home-panel-about">
+                <div class="home-panel__head">
+                  <h2 id="home-panel-about" class="home-panel__title">About</h2>
+                  <a class="home-panel__link" href="/about.html">Full profile →</a>
+                </div>
+                <p class="home-panel__blurb">
+                  Software engineer focused on scalable web applications, quality, and using AI thoughtfully in the development workflow.
+                </p>
+                <p class="home-panel__blurb muted small">Skills, stacks, and contact are on the about page.</p>
+              </section>
+            </div>
+          </div>
         </div>
       </main>
     </div>
