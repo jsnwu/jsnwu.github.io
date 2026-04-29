@@ -8,7 +8,7 @@
     "url": "/posts/articles/2026-04/web-app-performance-optimization.html"
   },
   {
-    "title": "Playwright Locator Auto Heal (Local and AI)",
+    "title": "Playwright Locator Auto Heal (Rule-based and AI)",
     "date": "2026-04-10",
     "tags": ["playwright", "typescript", "ai", "testing", "auto-healing", "e2e", "ollama"],
     "readingTime": "6 min",
