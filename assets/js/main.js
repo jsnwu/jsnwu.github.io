@@ -1155,13 +1155,6 @@ function initProjectShotCarousels() {
     setPaused(false);
     idle(() => decodeImage(imgs[(idx + 1) % imgs.length]));
 
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setActive(idx + 1);
-      idle(() => decodeImage(imgs[(idx + 1) % imgs.length]));
-    });
-
     if (toggleBtn) {
       toggleBtn.addEventListener("click", (e) => {
         e.preventDefault();
