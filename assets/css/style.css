@@ -417,9 +417,6 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   gap: var(--rail-gap);
   align-items: center;
 }
-.topbar__inner:has(.topbar__search){
-  align-items: start;
-}
 .topbar__inner:not(:has(.topbar__search)){
   display: flex;
   flex-wrap: wrap;
@@ -544,6 +541,13 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   font-size: 14px;
 }
 .search__input::placeholder{ color: var(--faint); }
+
+/* Tablet / iPad: viewport still uses desktop layout (>820) but width is modest — hide topbar search. */
+@media (min-width: 821px) and (max-width: 1194px){
+  .topbar__search{
+    display: none !important;
+  }
+}
 
 .main{
   grid-area: main;
@@ -718,6 +722,18 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   line-height: 1.45;
   color: var(--muted);
   margin-top: auto;
+}
+@media (max-width: 719px){
+  .home-project-tile__title{
+    display: block;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .home-project-tile__desc{
+    display: none;
+  }
 }
 @media (prefers-reduced-motion: reduce){
   .home-project-tile__shot img{
