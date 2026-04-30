@@ -789,6 +789,7 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
   min-width: 0;
+  --home-panel-icon: none;
 }
 .home-panel__head{
   display: flex;
@@ -800,12 +801,28 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
 }
 .home-panel__title{
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: 13px;
   letter-spacing: 0.22px;
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 650;
 }
+.home-panel__title::before{
+  content: "";
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  background: currentColor;
+  opacity: 0.95;
+  -webkit-mask: var(--home-panel-icon) no-repeat center / contain;
+  mask: var(--home-panel-icon) no-repeat center / contain;
+}
+.home-panel--projects{ --home-panel-icon: url("/assets/icons/nav-projects.svg"); }
+.home-panel--posts{ --home-panel-icon: url("/assets/icons/nav-posts.svg"); }
+.home-panel--about{ --home-panel-icon: url("/assets/icons/nav-about.svg"); }
 .home-panel__link{
   flex-shrink: 0;
   font-size: 14px;

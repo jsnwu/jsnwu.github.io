@@ -530,9 +530,12 @@ function initSidebarCollapse() {
 
   const readLsCollapsed = () => {
     try {
-      return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1";
+      const v = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+      if (v === "1") return true;
+      if (v === "0") return false;
+      return null;
     } catch {
-      return false;
+      return null;
     }
   };
 
@@ -551,8 +554,7 @@ function initSidebarCollapse() {
     if (icon) icon.textContent = collapsed ? "»" : "«";
     if (persist) {
       try {
-        if (collapsed) localStorage.setItem(SIDEBAR_COLLAPSED_KEY, "1");
-        else localStorage.removeItem(SIDEBAR_COLLAPSED_KEY);
+        localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? "1" : "0");
       } catch {}
     }
 
@@ -571,7 +573,7 @@ function initSidebarCollapse() {
     if (!mqDesktop.matches) {
       if (autoNarrowCollapse) {
         autoNarrowCollapse = false;
-        applySidebarCollapsed(readLsCollapsed(), { persist: false, instant: true });
+        applySidebarCollapsed(readLsCollapsed() ?? true, { persist: false, instant: true });
       }
       return;
     }
@@ -580,7 +582,7 @@ function initSidebarCollapse() {
       userDismissedNarrowAuto = false;
       if (autoNarrowCollapse) {
         autoNarrowCollapse = false;
-        applySidebarCollapsed(readLsCollapsed(), { persist: false, instant: true });
+        applySidebarCollapsed(readLsCollapsed() ?? true, { persist: false, instant: true });
       }
       return;
     }
@@ -593,9 +595,10 @@ function initSidebarCollapse() {
     }
   };
 
-  try {
-    if (readLsCollapsed()) applySidebarCollapsed(true, { persist: true });
-  } catch {}
+  const stored = readLsCollapsed();
+  // Default behavior (no stored preference yet): start collapsed.
+  if (stored === null) applySidebarCollapsed(true, { persist: true, instant: true });
+  else applySidebarCollapsed(stored, { persist: false, instant: true });
 
   syncAutoNarrowCollapse();
 
@@ -944,9 +947,19 @@ function initSiteSearchDropdown() {
       const first = resultsHost.querySelector(".search-result");
       if (first && first.getAttribute("href")) {
         e.preventDefault();
+        closePopover();
         location.assign(first.getAttribute("href"));
       }
     }
+  });
+
+  // Clicking a result should always hide the popover immediately (even if the navigation is same-page / hash-only).
+  resultsHost.addEventListener("click", (e) => {
+    const t = e.target;
+    if (!t) return;
+    const a = t.closest && t.closest("a.search-result");
+    if (!a) return;
+    closePopover();
   });
 
   document.addEventListener("pointerdown", (e) => {
