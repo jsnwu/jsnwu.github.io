@@ -30,7 +30,6 @@
           </div>
           <div class="topbar__tools">
             <div data-include="/assets/partials/topbar-theme.html"></div>
-            <div data-include="/assets/partials/topbar-search.html"></div>
           </div>
         </div>
       </header>
@@ -41,7 +40,8 @@
             <header class="home-intro">
               <h1 class="home-intro__title">Jason Wu</h1>
               <p class="home-intro__lede">
-                Software engineer focused on scalable web applications, quality, and using AI thoughtfully in the development life cycle.
+                Software engineer focused on scalable web applications and quality
+                Embracing AI in the workflow of the development life cycle.
               </p>
             </header>
 
@@ -127,15 +127,18 @@
                 <div class="cards" data-latest-posts data-latest-limit="4" aria-live="polite"></div>
               </section>
 
-              <section class="home-panel" aria-labelledby="home-panel-about">
-                <div class="home-panel__head">
-                  <h2 id="home-panel-about" class="home-panel__title">About</h2>
-                  <a class="home-panel__link" href="/about.html">Full profile →</a>
+              <section class="home-panel home-panel--about" aria-labelledby="home-panel-about">
+                <a class="home-panel__hit" href="/about.html" aria-label="Open full about profile"></a>
+                <div class="home-panel__body">
+                  <div class="home-panel__head">
+                    <h2 id="home-panel-about" class="home-panel__title">About</h2>
+                    <span class="home-panel__link" aria-hidden="true">Full profile →</span>
+                  </div>
+                  <p class="home-panel__blurb">
+                    Software engineer focused on scalable web applications, quality, and using AI thoughtfully in the development workflow.
+                  </p>
+                  <p class="home-panel__blurb muted small">Skills, stacks, and contact are on the about page.</p>
                 </div>
-                <p class="home-panel__blurb">
-                  Software engineer focused on scalable web applications, quality, and using AI thoughtfully in the development workflow.
-                </p>
-                <p class="home-panel__blurb muted small">Skills, stacks, and contact are on the about page.</p>
               </section>
             </div>
           </div>

@@ -27,6 +27,9 @@
   --sidebar-w-expanded: 220px;
   --sidebar-w-collapsed: 72px;
   --sidebar-w: var(--sidebar-w-expanded);
+  /* Sticky rail / heading anchor offset — keep in sync with .topbar min-height + vertical padding. */
+  --topbar-min-h: 70px;
+  --rail-sticky-top: 72px;
   /* Collapsed-nav flyout: opaque so it reads over the article (panel-bg is too faint in dark). */
   --nav-tooltip-bg: color-mix(in srgb, var(--sidebar-bg) 58%, #000000 42%);
   --nav-tooltip-border: color-mix(in srgb, var(--border) 75%, rgba(255, 255, 255, 0.14) 25%);
@@ -401,12 +404,17 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   top:0;
   z-index: 20;
   min-width: 0;
-  padding: 12px var(--layout-pad-x);
+  padding: 10px var(--layout-pad-x);
+  min-height: var(--topbar-min-h);
+  box-sizing: border-box;
   border-bottom: 0;
   background: color-mix(in srgb, var(--bg) 90%, white 10%);
   backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
 }
 .topbar__inner{
+  flex: 1 1 auto;
   max-width: var(--main-inner-max);
   margin-left: 0;
   margin-right: auto;
@@ -568,16 +576,72 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
 .main-inner--no-rail{
   grid-template-columns: minmax(0, 1fr);
 }
+/* Match the main article column width (e.g. post cards) instead of stretching to full --main-inner-max. */
+.main-inner--no-rail > .content{
+  max-width: var(--content-max);
+}
 /* Let the article column shrink below intrinsic min-content on narrow viewports (avoids horizontal scroll). */
 .main-inner > *{
   min-width: 0;
 }
 .rail{
   position: sticky;
-  top: 66px;
+  top: var(--rail-sticky-top);
   display:flex;
   flex-direction: column;
   gap: 12px;
+}
+.rail--projects{
+  max-height: calc(100vh - var(--rail-sticky-top) - 20px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.rail .widget.widget--project-highlight{
+  position: relative;
+  cursor: pointer;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.1);
+  overflow-wrap: break-word;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.rail .widget.widget--project-highlight:hover,
+.rail .widget.widget--project-highlight:focus-within{
+  transform: translateY(-1px);
+  background: var(--card-bg-hover);
+  border-color: color-mix(in srgb, var(--border) 70%, var(--accent) 30%);
+}
+.rail .widget.widget--project-highlight .widget__hit{
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+}
+.rail .widget.widget--project-highlight .widget__hit:focus-visible{
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* Let the full-card link receive clicks; keep demo/GitHub links interactive above it. */
+.rail .widget.widget--project-highlight .widget__body{
+  position: relative;
+  pointer-events: none;
+}
+.rail .widget.widget--project-highlight .project-highlights a{
+  pointer-events: auto;
+}
+.project-highlights{
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.project-highlights li{
+  margin: 0.32em 0;
+}
+.project-highlights a{
+  color: var(--text);
+  font-weight: 600;
 }
 
 /* Home dashboard: section panels for a quick site overview */
@@ -654,6 +718,42 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
 .home-panel__blurb:last-child{
   margin-bottom: 0;
 }
+.home-panel.home-panel--about{
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.home-panel.home-panel--about:hover,
+.home-panel.home-panel--about:focus-within{
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--border) 70%, var(--accent) 30%);
+}
+.home-panel.home-panel--about .home-panel__hit{
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+}
+.home-panel.home-panel--about .home-panel__hit:focus-visible{
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.home-panel.home-panel--about .home-panel__body{
+  position: relative;
+  pointer-events: none;
+}
+.home-panel.home-panel--about:hover .home-panel__link,
+.home-panel.home-panel--about:focus-within .home-panel__link{
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--border);
+}
+@media (prefers-reduced-motion: reduce){
+  .home-panel.home-panel--about:hover,
+  .home-panel.home-panel--about:focus-within{
+    transform: none;
+  }
+}
 .home-projects-grid{
   list-style: none;
   margin: 0;
@@ -665,9 +765,13 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
 .home-projects-grid > li{
   margin: 0;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
-.home-projects-grid > li > a{
-  height: 100%;
+.home-projects-grid > li > .home-project-tile{
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
 }
 .home-project-tile{
   display: flex;
@@ -683,12 +787,17 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
   transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
   overflow-wrap: break-word;
+  cursor: pointer;
 }
 .home-project-tile:hover{
   transform: translateY(-1px);
   background: var(--surface-2);
   border-color: color-mix(in srgb, var(--border) 70%, var(--accent) 30%);
   text-decoration: none;
+}
+.home-project-tile:focus-visible{
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 .home-project-tile__shot{
   display: block;
@@ -1101,7 +1210,7 @@ html[data-scrolling=\"true\"] .projects__grid .project-shot__link:focus-visible 
 
 .contact__grid{
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 .contact__grid .widget{
@@ -1117,6 +1226,15 @@ html[data-scrolling=\"true\"] .projects__grid .project-shot__link:focus-visible 
 }
 .contact__grid .widget p{
   margin: 0;
+}
+.contact__grid.contact__grid--rail{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  grid-template-columns: unset;
+}
+.rail .contact__grid.contact__grid--rail .widget--flat p{
+  overflow-wrap: anywhere;
 }
 
 /*
@@ -1186,7 +1304,7 @@ html[data-scrolling=\"true\"] .projects__grid .project-shot__link:focus-visible 
 [data-article] h2,
 [data-article] h3,
 [data-article] h4{
-  scroll-margin-top: 86px;
+  scroll-margin-top: calc(var(--rail-sticky-top) + 14px);
 }
 .toc__indent-4{ padding-left: 38px; }
 
@@ -1479,9 +1597,23 @@ html[data-scrolling=\"true\"] .projects__grid .project-shot__link:focus-visible 
   .rail{ position: static; }
   /* Rail stacks below the article; hide the scrollspy TOC to save vertical space on narrow viewports. */
   .rail .widget.toc{ display: none; }
+  /* Projects page: highlight rail duplicates the article; hide the whole aside once layout stacks (≤960px). */
+  aside.rail[class*="rail--project"]{
+    display: none !important;
+  }
+}
+
+/* Touch-primary: hide project highlight rail when it would still sit beside the article (e.g. tablet landscape). */
+@media (hover: none) and (pointer: coarse){
+  aside.rail[class*="rail--project"]{
+    display: none !important;
+  }
 }
 
 @media (max-width: 820px){
+  .topbar{
+    min-height: unset;
+  }
   .sidebar__collapseDock{
     display: none;
   }

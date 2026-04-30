@@ -30,7 +30,6 @@
           </div>
           <div class="topbar__tools">
             <div data-include="/assets/partials/topbar-theme.html"></div>
-            <div data-include="/assets/partials/topbar-search.html"></div>
           </div>
         </div>
       </header>
@@ -166,7 +165,60 @@
             </div>
           </article>
 
-          <aside class="rail" aria-label="Right rail" data-include="/assets/partials/rail-default.html"></aside>
+          <aside class="rail rail--projects" aria-label="Project highlights">
+            <section class="widget widget--project-highlight">
+              <a class="widget__hit" href="#spelling-bee-studio" aria-label="View Spelling Bee Studio in the page"></a>
+              <div class="widget__body">
+                <h2 class="widget__title">Spelling Bee Studio</h2>
+                <ul class="project-highlights">
+                  <li>Student spelling practice from uploaded CSV word lists</li>
+                  <li>Sentence clue or spoken modes; runs offline in the page</li>
+                  <li>
+                    <a href="https://spellingbee-studio.vercel.app/" rel="noopener noreferrer">Live demo</a>
+                    ·
+                    <a href="https://github.com/jsnwu/spelling-bee" rel="noopener noreferrer">GitHub</a>
+                  </li>
+                </ul>
+              </div>
+            </section>
+            <section class="widget widget--project-highlight">
+              <a class="widget__hit" href="#test-dashboard" aria-label="View Test Dashboard in the page"></a>
+              <div class="widget__body">
+                <h2 class="widget__title">Test Dashboard</h2>
+                <ul class="project-highlights">
+                  <li>Playwright runs with history and rich filtering</li>
+                  <li>Drill-down into logs, screenshots, video, and traces</li>
+                  <li><a href="https://github.com/jsnwu/test-dashboard" rel="noopener noreferrer">GitHub</a></li>
+                </ul>
+              </div>
+            </section>
+            <section class="widget widget--project-highlight">
+              <a class="widget__hit" href="#slice-dice" aria-label="View Slice Dice in the page"></a>
+              <div class="widget__body">
+                <h2 class="widget__title">Slice Dice</h2>
+                <ul class="project-highlights">
+                  <li>Next.js + Django pizza order &amp; delivery on AWS Fargate</li>
+                  <li>Menu, cart, checkout, order tracking, owner dashboard</li>
+                  <li>
+                    <a href="http://sliced-alb16-pmze1cex8iax-1636331247.us-east-1.elb.amazonaws.com/menu" rel="noopener noreferrer">Live demo</a>
+                    ·
+                    <a href="https://github.com/jsnwu/slice_dice" rel="noopener noreferrer">GitHub</a>
+                  </li>
+                </ul>
+              </div>
+            </section>
+            <section class="widget widget--project-highlight">
+              <a class="widget__hit" href="#ui-play" aria-label="View UI Play in the page"></a>
+              <div class="widget__body">
+                <h2 class="widget__title">UI Play</h2>
+                <ul class="project-highlights">
+                  <li>Text-driven UI recorder and player on Playwright</li>
+                  <li>Build flows as text steps, run and debug in one UI</li>
+                  <li><a href="https://github.com/jsnwu/ui-play" rel="noopener noreferrer">GitHub</a></li>
+                </ul>
+              </div>
+            </section>
+          </aside>
         </div>
       </main>
     </div>
