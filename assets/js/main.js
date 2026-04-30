@@ -736,29 +736,34 @@ function initPostsSearchNavigateFromOtherPages() {
 }
 
 async function initLatestPosts() {
-  const host = document.querySelector("[data-latest-posts]");
-  if (!host) return;
+  const hosts = [...document.querySelectorAll("[data-latest-posts]")];
+  if (!hosts.length) return;
 
-  const limitRaw = host.getAttribute("data-latest-limit");
-  let limit = 5;
-  if (limitRaw != null && String(limitRaw).trim() !== "") {
-    const n = parseInt(String(limitRaw), 10);
-    if (!Number.isNaN(n) && n > 0) limit = Math.min(n, 50);
-  }
+  const getLimit = (host) => {
+    const limitRaw = host.getAttribute("data-latest-limit");
+    let limit = 5;
+    if (limitRaw != null && String(limitRaw).trim() !== "") {
+      const n = parseInt(String(limitRaw), 10);
+      if (!Number.isNaN(n) && n > 0) limit = Math.min(n, 50);
+    }
+    return limit;
+  };
 
   try {
     const posts = await loadPosts();
-    posts
+    const latest = posts
       .slice()
-      .sort((a, b) => (String(b.date || "")).localeCompare(String(a.date || "")))
-      .slice(0, limit)
-      .forEach((p) => host.appendChild(renderPostCard(p)));
+      .sort((a, b) => (String(b.date || "")).localeCompare(String(a.date || "")));
 
-    if (!host.childElementCount) {
-      host.innerHTML = `<div class="muted">No posts yet.</div>`;
-    }
+    hosts.forEach((host) => {
+      const limit = getLimit(host);
+      latest.slice(0, limit).forEach((p) => host.appendChild(renderPostCard(p)));
+      if (!host.childElementCount) host.innerHTML = `<div class="muted">No posts yet.</div>`;
+    });
   } catch {
-    host.innerHTML = `<div class="muted">Could not load posts.</div>`;
+    hosts.forEach((host) => {
+      host.innerHTML = `<div class="muted">Could not load posts.</div>`;
+    });
   }
 }
 
@@ -1416,38 +1421,52 @@ function initTrendingTags() {
 }
 
 function initRecentlyUpdated() {
-  const host = document.querySelector("[data-recently-updated]");
-  if (!host) return;
+  const hosts = [...document.querySelectorAll("[data-recently-updated]")];
+  if (!hosts.length) return;
+
+  const getLimit = (host) => {
+    const raw = host.getAttribute("data-recent-limit");
+    let limit = 5;
+    if (raw != null && String(raw).trim() !== "") {
+      const n = parseInt(String(raw), 10);
+      if (!Number.isNaN(n) && n > 0) limit = Math.min(n, 50);
+    }
+    return limit;
+  };
 
   loadPosts()
     .then((posts) => {
-      const list = posts
-        .slice()
-        .sort((a, b) => (String(b.date || "")).localeCompare(String(a.date || "")))
-        .slice(0, 5);
+      const sorted = posts.slice().sort((a, b) => (String(b.date || "")).localeCompare(String(a.date || "")));
 
-      host.innerHTML = "";
-      if (!list.length) {
-        host.innerHTML = `<div class="muted">No posts yet.</div>`;
-        return;
-      }
+      hosts.forEach((host) => {
+        const limit = getLimit(host);
+        const list = sorted.slice(0, limit);
 
-      list.forEach((p) => {
-        const row = document.createElement("div");
-        row.className = "widget__item";
-        const a = document.createElement("a");
-        a.href = p.url;
-        a.textContent = p.title || "Untitled";
-        const d = document.createElement("span");
-        d.className = "widget__count";
-        d.textContent = p.date ? fmtDate(p.date) : "";
-        row.appendChild(a);
-        row.appendChild(d);
-        host.appendChild(row);
+        host.innerHTML = "";
+        if (!list.length) {
+          host.innerHTML = `<div class="muted">No posts yet.</div>`;
+          return;
+        }
+
+        list.forEach((p) => {
+          const row = document.createElement("div");
+          row.className = "widget__item";
+          const a = document.createElement("a");
+          a.href = p.url;
+          a.textContent = p.title || "Untitled";
+          const d = document.createElement("span");
+          d.className = "widget__count";
+          d.textContent = p.date ? fmtDate(p.date) : "";
+          row.appendChild(a);
+          row.appendChild(d);
+          host.appendChild(row);
+        });
       });
     })
     .catch(() => {
-      host.innerHTML = `<div class="muted">Could not load posts.</div>`;
+      hosts.forEach((host) => {
+        host.innerHTML = `<div class="muted">Could not load posts.</div>`;
+      });
     });
 }
 
