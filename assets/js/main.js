@@ -668,8 +668,8 @@ function renderPostCard(post) {
     meta.appendChild(date);
   }
 
-  // Show up to 2 tags on cards (keeps layout compact, still informative).
-  const tags = getVisiblePostTags(post).slice(0, 2);
+  // Show up to 4 tags on cards.
+  const tags = getVisiblePostTags(post).slice(0, 4);
   tags.forEach((t) => {
     const tag = document.createElement("span");
     tag.className = "pill";
