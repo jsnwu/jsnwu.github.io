@@ -451,19 +451,30 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   gap: 10px;
   min-width: 0;
 }
-/* Full rail width for search: theme + search were sharing one row and shrinking the field. */
-.topbar__tools:has(.topbar__search){
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-  width: 100%;
-}
-.topbar__tools:has(.topbar__search) > div:first-child{
-  align-self: flex-end;
-}
 .topbar__lead > div:nth-child(2){
   flex: 1;
   min-width: 0;
+}
+.topbar__inner:has(.topbar__lead .topbar__search){
+  position: relative;
+}
+/* Keep breadcrumbs/menu in the content column without wrapping to a second row. */
+.topbar__inner:has(.topbar__lead .topbar__search) .topbar__lead{
+  padding-right: calc(300px + 12px);
+}
+/* Search stays in the DOM under .topbar__lead, but is visually aligned to the rail column edge. */
+.topbar__inner:has(.topbar__lead .topbar__search) .topbar__lead .topbar__search{
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 300px;
+  max-width: min(300px, calc(100% - 24px));
+}
+/* Make room for the search so theme button doesn't overlap it. */
+.topbar__inner:has(.topbar__lead .topbar__search) .topbar__tools{
+  justify-content: flex-start;
+  padding-right: calc(300px + 12px);
 }
 .topbar__lead .topbar__crumb{
   min-width: 0;
@@ -526,6 +537,7 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--panel-bg);
+  position: relative;
 }
 .search__icon{
   display: flex;
@@ -549,6 +561,101 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   font-size: 14px;
 }
 .search__input::placeholder{ color: var(--faint); }
+
+.search__popover{
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  left: auto;
+  width: min(520px, calc(100vw - 24px));
+  z-index: 60;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 72%, var(--sidebar-bg) 28%);
+  box-shadow: 0 18px 45px rgba(0,0,0,.40);
+  overflow: hidden;
+}
+.search__popover-title{
+  padding: 12px 12px 8px;
+  font-size: 12px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--faint);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+.search__results{
+  display:flex;
+  flex-direction: column;
+}
+.search-result{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+  text-decoration: none;
+  color: inherit;
+}
+.search-result:last-child{ border-bottom: 0; }
+.search-result:hover{
+  background: var(--surface);
+  text-decoration: none;
+}
+.search-result__thumb{
+  width: 56px;
+  height: 50px;
+  flex: 0 0 56px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.search-result__thumb img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display:block;
+}
+.search-result__body{ min-width: 0; flex: 1 1 auto; }
+.search-result__title{
+  font-size: 14px;
+  font-weight: 680;
+  line-height: 1.25;
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.search-result__meta{
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.search-result__kind{
+  margin-left: 8px;
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.search__empty{
+  padding: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
 
 /* Tablet / iPad: viewport still uses desktop layout (>820) but width is modest — hide topbar search. */
 @media (min-width: 821px) and (max-width: 1194px){

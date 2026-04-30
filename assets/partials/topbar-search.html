@@ -3,6 +3,10 @@
     <span class="search__icon" aria-hidden="true">
       <img src="/assets/icons/search.svg" alt="" width="18" height="18" />
     </span>
-    <input class="search__input" type="search" placeholder="Search posts…" aria-label="Search posts" data-posts-search />
+    <input class="search__input" type="search" placeholder="Search…" aria-label="Search site" autocomplete="off" data-posts-search />
+    <div class="search__popover" hidden data-site-search-popover>
+      <div class="search__popover-title">From this profile</div>
+      <div class="search__results" role="listbox" aria-label="Search results" data-site-search-results></div>
+    </div>
   </div>
 </div>

@@ -718,20 +718,255 @@ function navigateToPostsWithQuery(term) {
   location.assign(url.href);
 }
 
-/** Home, about, post detail, etc.: typing in the topbar search goes to Posts with ?q=… (term kept in URL and restored in the input). */
-function initPostsSearchNavigateFromOtherPages() {
-  if (isPostsIndexPage()) return;
+function escapeHtml(s) {
+  return String(s || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function buildSiteSearchThumb({ imgSrc, title }) {
+  const thumb = document.createElement("span");
+  thumb.className = "search-result__thumb";
+  if (imgSrc) {
+    const img = document.createElement("img");
+    img.src = imgSrc;
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    thumb.appendChild(img);
+  } else {
+    // subtle fallback: first letter in a pill-like box
+    const t = document.createElement("span");
+    t.className = "pill";
+    t.style.opacity = "0.8";
+    t.textContent = (String(title || "").trim().slice(0, 1) || "•").toUpperCase();
+    thumb.appendChild(t);
+  }
+  return thumb;
+}
+
+function normalizeForSearch(s) {
+  return String(s || "").trim().toLowerCase();
+}
+
+function computeSearchScore(hayLower, titleLower, termLower) {
+  if (!termLower) return 0;
+  if (titleLower === termLower) return 500;
+  if (titleLower.startsWith(termLower)) return 420;
+  if (hayLower.startsWith(termLower)) return 320;
+  const idx = hayLower.indexOf(termLower);
+  if (idx >= 0) return 200 - Math.min(120, idx);
+  return 0;
+}
+
+async function loadProjectsIndex() {
+  const res = await fetch(resolveSiteAbsolutePath("/projects/"), { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to load projects");
+  const html = await res.text();
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const sections = [...doc.querySelectorAll(".projects__grid > section.widget")];
+  return sections
+    .map((sec) => {
+      const h = sec.querySelector(".widget__title");
+      const id = h && h.id ? h.id : "";
+      const title = (h && h.textContent) ? h.textContent.trim() : "";
+      const p = sec.querySelector("p");
+      const desc = (p && p.textContent) ? p.textContent.trim().replace(/\s+/g, " ") : "";
+      const img = sec.querySelector("img");
+      const imgSrc = img && img.getAttribute("src") ? img.getAttribute("src") : "";
+      if (!title || !id) return null;
+      return {
+        kind: "Project",
+        title,
+        description: desc,
+        url: `/projects/#${encodeURIComponent(id)}`,
+        imgSrc,
+      };
+    })
+    .filter(Boolean);
+}
+
+/** Home, projects, about, post detail, etc.: topbar search shows an inline dropdown (top 3 results). */
+function initSiteSearchDropdown() {
+  if (isPostsIndexPage()) return; // keep /posts/ index behavior (filters list)
   const input = document.querySelector("[data-posts-search]");
   if (!input) return;
-  let debounceTimer = null;
-  input.addEventListener("input", () => {
-    const term = input.value.trim();
-    if (!term) {
-      clearTimeout(debounceTimer);
+
+  const host = input.closest(".search");
+  const popover = host && host.querySelector("[data-site-search-popover]");
+  const resultsHost = popover && popover.querySelector("[data-site-search-results]");
+  if (!host || !popover || !resultsHost) return;
+
+  let cachedPosts = null;
+  let cachedProjects = null;
+  let loading = false;
+  let lastTerm = "";
+
+  const basePages = [
+    { kind: "Page", title: "About", description: "Profile, skills, stacks, and contact.", url: "/about.html", imgSrc: "" },
+    { kind: "Page", title: "Projects", description: "Selected projects and repositories.", url: "/projects/", imgSrc: "" },
+    { kind: "Page", title: "Posts", description: "Writing on building, testing, and scaling web apps.", url: "/posts/", imgSrc: "" },
+  ];
+
+  async function ensureIndexLoaded() {
+    if (loading) return;
+    loading = true;
+    try {
+      if (!cachedPosts) cachedPosts = await loadPosts();
+    } catch {
+      cachedPosts = [];
+    }
+    try {
+      if (!cachedProjects) cachedProjects = await loadProjectsIndex();
+    } catch {
+      cachedProjects = [];
+    }
+    loading = false;
+  }
+
+  function renderEmpty(msg) {
+    resultsHost.innerHTML = `<div class="search__empty">${escapeHtml(msg)}</div>`;
+  }
+
+  function openPopover() {
+    popover.hidden = false;
+  }
+
+  function closePopover() {
+    popover.hidden = true;
+  }
+
+  function buildEntryList(termLower) {
+    const entries = [];
+
+    basePages.forEach((p) => {
+      const hayLower = normalizeForSearch(`${p.title} ${p.description}`);
+      const score = computeSearchScore(hayLower, normalizeForSearch(p.title), termLower);
+      if (score > 0) entries.push({ ...p, score });
+    });
+
+    (cachedProjects || []).forEach((p) => {
+      const hayLower = normalizeForSearch(`${p.title} ${p.description}`);
+      const score = computeSearchScore(hayLower, normalizeForSearch(p.title), termLower);
+      if (score > 0) entries.push({ ...p, score });
+    });
+
+    (cachedPosts || []).forEach((post) => {
+      const title = post.title || "Untitled";
+      const tags = getVisiblePostTags(post).join(" ");
+      const desc = post.description || "";
+      const hayLower = normalizeForSearch(`${title} ${tags} ${desc}`);
+      const score = computeSearchScore(hayLower, normalizeForSearch(title), termLower);
+      if (score <= 0) return;
+      entries.push({
+        kind: "Post",
+        title,
+        description: desc,
+        url: post.url,
+        imgSrc: "",
+        meta: post.date ? fmtDate(post.date) : "",
+        score,
+      });
+    });
+
+    entries.sort((a, b) => (b.score - a.score) || String(a.title).localeCompare(String(b.title)));
+    return entries.slice(0, 3);
+  }
+
+  function renderResults(list) {
+    resultsHost.innerHTML = "";
+    if (!list.length) {
+      renderEmpty("No results.");
       return;
     }
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => navigateToPostsWithQuery(term), 400);
+    list.forEach((item, idx) => {
+      const a = document.createElement("a");
+      a.className = "search-result";
+      a.href = item.url;
+      a.setAttribute("role", "option");
+      a.setAttribute("aria-selected", "false");
+      a.dataset.searchIndex = String(idx);
+
+      a.appendChild(buildSiteSearchThumb({ imgSrc: item.imgSrc, title: item.title }));
+
+      const body = document.createElement("span");
+      body.className = "search-result__body";
+
+      const title = document.createElement("span");
+      title.className = "search-result__title";
+      title.textContent = item.title;
+
+      const kind = document.createElement("span");
+      kind.className = "search-result__kind";
+      kind.textContent = item.kind;
+      title.appendChild(kind);
+
+      const meta = document.createElement("span");
+      meta.className = "search-result__meta";
+      meta.textContent = item.meta || item.description || "";
+
+      body.appendChild(title);
+      body.appendChild(meta);
+      a.appendChild(body);
+
+      resultsHost.appendChild(a);
+    });
+  }
+
+  let debounce = null;
+  input.addEventListener("input", () => {
+    const term = String(input.value || "").trim();
+    lastTerm = term;
+    clearTimeout(debounce);
+    if (!term) {
+      closePopover();
+      return;
+    }
+    openPopover();
+    renderEmpty("Searching…");
+    debounce = setTimeout(async () => {
+      await ensureIndexLoaded();
+      if (lastTerm !== term) return;
+      const termLower = term.toLowerCase();
+      renderResults(buildEntryList(termLower));
+    }, 120);
+  });
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      closePopover();
+      return;
+    }
+    if (e.key === "Enter" && !popover.hidden) {
+      const first = resultsHost.querySelector(".search-result");
+      if (first && first.getAttribute("href")) {
+        e.preventDefault();
+        location.assign(first.getAttribute("href"));
+      }
+    }
+  });
+
+  document.addEventListener("pointerdown", (e) => {
+    if (popover.hidden) return;
+    const t = e.target;
+    if (!t) return;
+    if (host.contains(t)) return;
+    closePopover();
+  });
+
+  input.addEventListener("focus", () => {
+    const term = String(input.value || "").trim();
+    if (term) openPopover();
+  });
+  input.addEventListener("blur", () => {
+    // allow click on results to register before hiding
+    window.setTimeout(() => {
+      if (document.activeElement && host.contains(document.activeElement)) return;
+      closePopover();
+    }, 120);
   });
 }
 
@@ -1799,7 +2034,7 @@ function initSidebarNavActive() {
   wireThemeButtons();
   initSidebarToggle();
   initSidebarCollapse();
-  initPostsSearchNavigateFromOtherPages();
+  initSiteSearchDropdown();
   initLatestPosts();
   initPostsIndex();
   initTrendingTags();
