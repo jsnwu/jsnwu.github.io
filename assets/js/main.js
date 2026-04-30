@@ -2037,8 +2037,41 @@ function initSidebarNavActive() {
   });
 }
 
+function initExternalLinksNewTab() {
+  const pageOrigin = window.location.origin;
+  document.querySelectorAll("a[href]").forEach((a) => {
+    // Respect explicit author intent if set.
+    if (a.hasAttribute("target")) return;
+    if (a.hasAttribute("download")) return;
+
+    const raw = a.getAttribute("href");
+    if (!raw) return;
+    const href = String(raw).trim();
+    if (!href || href.startsWith("#")) return;
+    if (/^(mailto:|tel:|sms:)/i.test(href)) return;
+    if (/^(javascript:|data:)/i.test(href)) return;
+
+    let u;
+    try {
+      u = new URL(href, window.location.href);
+    } catch {
+      return;
+    }
+    if (!(u.protocol === "http:" || u.protocol === "https:")) return;
+    if (u.origin === pageOrigin) return;
+
+    a.target = "_blank";
+    const existingRel = (a.getAttribute("rel") || "").trim();
+    const parts = new Set(existingRel ? existingRel.split(/\s+/g) : []);
+    parts.add("noopener");
+    parts.add("noreferrer");
+    a.setAttribute("rel", [...parts].join(" ").trim());
+  });
+}
+
 (async function startApp() {
   await loadHtmlPartials();
+  initExternalLinksNewTab();
   initArticlePreDedents();
   initTopbarBreadcrumbs();
   initSidebarNavActive();
