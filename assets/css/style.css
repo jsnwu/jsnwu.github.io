@@ -125,7 +125,7 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   */
   --sidebar-collapse-top: max(4.5rem, 10%);
   /* Collapsed rail only: space above nav links (independent of --sidebar-collapse-top). */
-  --sidebar-collapsed-nav-pad-top: 45px;
+  --sidebar-collapsed-nav-pad-top: 65px;
 }
 /* One injected wrapper: real flex column (avoid display:contents quirks in some engines). */
 .sidebar__chunk{
@@ -341,27 +341,55 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   html[data-sidebar-collapsed="true"] .nav__item:focus-within{
     z-index: 5;
   }
+  html[data-sidebar-collapsed="true"] .nav__item::before{
+    content: "";
+    position: absolute;
+    left: calc(100% + 2px);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-right: 10px solid var(--nav-tooltip-bg);
+    /* Outline to match tooltip border (1px). */
+    filter:
+      drop-shadow(-1px 0 0 var(--nav-tooltip-border))
+      drop-shadow(0 2px 6px rgba(0,0,0,.16));
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.14s ease, visibility 0.14s ease;
+    z-index: 59;
+  }
   html[data-sidebar-collapsed="true"] .nav__item::after{
     content: attr(data-nav-tip);
     position: absolute;
-    left: calc(100% + 10px);
+    left: calc(100% + 6px);
     top: 50%;
     transform: translateY(-50%);
-    padding: 6px 11px;
+    padding: 11px 18px 11px 20px;
     font-size: 13px;
     font-weight: 600;
     line-height: 1.2;
     color: var(--text);
     background: var(--nav-tooltip-bg);
     border: 1px solid var(--nav-tooltip-border);
-    border-radius: 10px;
-    box-shadow: var(--shadow);
+    border-radius: 6px 12px 12px 6px;
+    box-shadow: none;
+    /* Use drop-shadow so the shadow follows rounded corners. */
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,.16));
     white-space: nowrap;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
     transition: opacity 0.14s ease, visibility 0.14s ease;
     z-index: 60;
+  }
+  html[data-sidebar-collapsed="true"] .nav__item:hover::before,
+  html[data-sidebar-collapsed="true"] .nav__item:focus-visible::before{
+    opacity: 1;
+    visibility: visible;
   }
   html[data-sidebar-collapsed="true"] .nav__item:hover::after,
   html[data-sidebar-collapsed="true"] .nav__item:focus-visible::after{
