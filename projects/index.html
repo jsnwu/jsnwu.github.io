@@ -37,7 +37,7 @@
       </header>
 
       <main id="main" class="main" tabindex="-1">
-        <div class="main-inner">
+        <div class="main-inner main-inner--projects-rail">
           <article class="content" data-article>
             <header class="post-header">
               <h1 class="post-title">Projects</h1>
@@ -48,8 +48,8 @@
               </div>
             </header>
             <div class="projects__grid">
-              <section class="widget">
-                <h3 class="widget__title" id="spelling-bee-studio">Spelling Bee Studio</h3>
+              <section class="widget" id="spelling-bee-studio">
+                <h3 class="widget__title">Spelling Bee Studio</h3>
                 <p>
                   Small web app game that allows students to upload a CSV word list, pick word in sentence or spoken mode, and practice. Runs entirely in the
                   page (offline-friendly). —
@@ -76,8 +76,8 @@
                   </a>
                 </figure>
               </section>
-              <section class="widget">
-                <h3 class="widget__title" id="test-dashboard">Test Dashboard</h3>
+              <section class="widget" id="test-dashboard">
+                <h3 class="widget__title">Test Dashboard</h3>
                 <p>
                   Full-stack dashboard for Playwright test runs, with history, filtering by (project, environment, name and tags), and drill-down into logs, 
                   screenshots, video, and traces. —
@@ -111,9 +111,9 @@
                     </span>
                   </a>
                 </figure>
-              </section>              
-              <section class="widget">
-                <h3 class="widget__title" id="slice-dice">Slice Dice</h3>
+              </section>
+              <section class="widget" id="slice-dice">
+                <h3 class="widget__title">Slice Dice</h3>
                 <p>
                   Pizza order and delivery web app (Next.js + Django) hosted on AWS Fargate: menu, cart, checkout, track order, and owner dashboard. —
                   <a href="https://github.com/jsnwu/slice_dice">GitHub</a>
@@ -139,8 +139,8 @@
                   </a>
                 </figure>
               </section>
-              <section class="widget">
-                <h3 class="widget__title" id="ui-play">UI Play</h3>
+              <section class="widget" id="ui-play">
+                <h3 class="widget__title">UI Play</h3>
                 <p>
                   Text-driven UI recorder/player built on Playwright — <a href="https://github.com/jsnwu/ui-play">GitHub</a>
                 </p>
@@ -162,12 +162,53 @@
                     />
                   </a>
                 </figure>
-              </section>              
+              </section>
+              <section class="widget" id="playwright-locator">
+                <h3 class="widget__title">Playwright Locator Helper</h3>
+                <p>
+                  Chrome extension that generates and verifies Playwright-style locators on the page you are on—pick mode, ranked strategies with verify and
+                  copy, evaluate for CSS or locator strings, and a configurable shortcut. Fork of tickytec/Playwright-Locator-Assistant with workflow tweaks.
+                  —
+                  <a href="https://github.com/jsnwu/playwright-locator">GitHub</a>
+                  ·
+                  <a href="/posts/articles/2026-04/playwright-locator-helper.html">Post</a>
+                </p>
+                <figure class="project-shot project-shot--contain">
+                  <a
+                    class="project-shot__link"
+                    href="https://github.com/jsnwu/playwright-locator"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="playwright-locator on GitHub"
+                  >
+                    <img
+                      src="/assets/img/articles/playwright-locator/extension-duckduckgo-search.png"
+                      width="750"
+                      height="1194"
+                      alt="Playwright Locator Helper popup: Pick Element, strategy rows with Verify and Copy, Evaluate locator field, and shortcut hint"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </a>
+                </figure>
+              </section>
 
             </div>
           </article>
 
+          <div class="rail-projects__column">
           <aside class="rail rail--projects" aria-label="Project highlights">
+            <div class="rail-projects__scroll" data-rail-projects-scroll>
+              <button
+                type="button"
+                class="rail-projects__nudge rail-projects__nudge--up"
+                data-rail-nudge-up
+                hidden
+                aria-label="Scroll project highlights up"
+              >
+                <span class="rail-projects__nudge-icon" aria-hidden="true">▲</span>
+              </button>
+              <div class="rail-projects__viewport">
             <section class="widget widget--project-highlight">
               <a class="widget__hit" href="#spelling-bee-studio" aria-label="View Spelling Bee Studio in the page"></a>
               <div class="widget__body">
@@ -220,7 +261,34 @@
                 </ul>
               </div>
             </section>
+            <section class="widget widget--project-highlight">
+              <a class="widget__hit" href="#playwright-locator" aria-label="View Playwright Locator Helper in the page"></a>
+              <div class="widget__body">
+                <h2 class="widget__title">Playwright Locator Helper</h2>
+                <ul class="project-highlights">
+                  <li>Generate and verify Playwright locators from the live page</li>
+                  <li>Pick mode, strategy rows, evaluate sandbox, keyboard shortcut</li>
+                  <li>
+                    <a href="https://github.com/jsnwu/playwright-locator" rel="noopener noreferrer">GitHub</a>
+                    ·
+                    <a href="/posts/articles/2026-04/playwright-locator-helper.html" rel="noopener noreferrer">Post</a>
+                  </li>
+                </ul>
+              </div>
+            </section>
+              </div>
+              <button
+                type="button"
+                class="rail-projects__nudge rail-projects__nudge--down"
+                data-rail-nudge-down
+                hidden
+                aria-label="Scroll project highlights down"
+              >
+                <span class="rail-projects__nudge-icon" aria-hidden="true">▼</span>
+              </button>
+            </div>
           </aside>
+          </div>
         </div>
       </main>
     </div>

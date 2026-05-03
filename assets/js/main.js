@@ -774,7 +774,7 @@ async function loadProjectsIndex() {
   return sections
     .map((sec) => {
       const h = sec.querySelector(".widget__title");
-      const id = h && h.id ? h.id : "";
+      const id = (sec.id && String(sec.id).trim()) || (h && h.id ? h.id : "");
       const title = (h && h.textContent) ? h.textContent.trim() : "";
       const p = sec.querySelector("p");
       const desc = (p && p.textContent) ? p.textContent.trim().replace(/\s+/g, " ") : "";
@@ -1335,6 +1335,253 @@ function initScrollingStateHint() {
   window.addEventListener("scroll", set, { passive: true });
 }
 
+/** Projects page: when the highlight rail overflows the sticky viewport, show framed ↑/↓ controls (click or hover to scroll). */
+function initRailProjectsScroll() {
+  const root = document.querySelector("[data-rail-projects-scroll]");
+  if (!root) return;
+  const viewport = root.querySelector(".rail-projects__viewport");
+  const btnUp = root.querySelector("[data-rail-nudge-up]");
+  const btnDown = root.querySelector("[data-rail-nudge-down]");
+  if (!viewport || !btnUp || !btnDown) return;
+
+  const prefersReduce =
+    window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const EDGE = 2;
+  const PAGE_BOTTOM_SLACK = 16;
+
+  function isPageScrolledToBottom() {
+    const y = window.scrollY;
+    const vh = window.innerHeight;
+    const docH = Math.max(
+      document.documentElement.scrollHeight,
+      document.body?.scrollHeight || 0
+    );
+    return y + vh >= docH - PAGE_BOTTOM_SLACK;
+  }
+
+  let upIv = 0;
+  let downIv = 0;
+
+  function sync() {
+    const slack = viewport.scrollHeight - viewport.clientHeight;
+    if (slack <= EDGE) {
+      btnUp.hidden = true;
+      btnDown.hidden = true;
+      return;
+    }
+    const maxScroll = slack;
+    const atEndOfRail = viewport.scrollTop >= maxScroll - EDGE;
+    const pageAtBottom = isPageScrolledToBottom();
+    btnUp.hidden = viewport.scrollTop <= EDGE;
+    /* Hide ↓ when the rail list is at its end or the document is at the bottom (nudge not useful / looks wrong). */
+    btnDown.hidden = pageAtBottom || atEndOfRail;
+    if (pageAtBottom || atEndOfRail) {
+      window.clearInterval(downIv);
+      downIv = 0;
+    }
+  }
+
+  const scrollStep = () => Math.max(120, Math.round(viewport.clientHeight * 0.72));
+
+  btnUp.addEventListener("click", () => {
+    viewport.scrollBy({ top: -scrollStep(), behavior: prefersReduce ? "auto" : "smooth" });
+  });
+  btnDown.addEventListener("click", () => {
+    viewport.scrollBy({ top: scrollStep(), behavior: prefersReduce ? "auto" : "smooth" });
+  });
+
+  const SPEED = 8;
+  const TICK = 26;
+
+  btnUp.addEventListener("mouseenter", () => {
+    if (prefersReduce) return;
+    window.clearInterval(upIv);
+    upIv = window.setInterval(() => {
+      viewport.scrollTop = Math.max(0, viewport.scrollTop - SPEED);
+      sync();
+      if (viewport.scrollTop <= EDGE) window.clearInterval(upIv);
+    }, TICK);
+  });
+  btnUp.addEventListener("mouseleave", () => {
+    window.clearInterval(upIv);
+    upIv = 0;
+  });
+
+  btnDown.addEventListener("mouseenter", () => {
+    if (prefersReduce) return;
+    window.clearInterval(downIv);
+    downIv = window.setInterval(() => {
+      if (isPageScrolledToBottom()) {
+        window.clearInterval(downIv);
+        downIv = 0;
+        sync();
+        return;
+      }
+      const maxScroll = viewport.scrollHeight - viewport.clientHeight;
+      viewport.scrollTop = Math.min(maxScroll, viewport.scrollTop + SPEED);
+      sync();
+      if (viewport.scrollTop >= maxScroll - EDGE) window.clearInterval(downIv);
+    }, TICK);
+  });
+  btnDown.addEventListener("mouseleave", () => {
+    window.clearInterval(downIv);
+    downIv = 0;
+  });
+
+  viewport.addEventListener("scroll", sync, { passive: true });
+  window.addEventListener("scroll", sync, { passive: true });
+  window.addEventListener("resize", sync, { passive: true });
+  if (document.readyState === "complete") sync();
+  else window.addEventListener("load", sync, { passive: true });
+
+  const ro = new ResizeObserver(sync);
+  ro.observe(viewport);
+  [...viewport.children].forEach((ch) => ro.observe(ch));
+
+  sync();
+  window.requestAnimationFrame(() => sync());
+}
+
+/** Projects page: scroll-spy — highlight rail card for the project section in view; scroll rail viewport when the active card changes. */
+function initProjectsRailScrollSpy() {
+  const mainInner = document.querySelector(".main-inner.main-inner--projects-rail");
+  const grid = document.querySelector(".projects__grid");
+  const vp = document.querySelector(".rail-projects__viewport");
+  if (!mainInner || !grid || !vp) return;
+
+  const prefersReduce =
+    window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const markers = [...grid.querySelectorAll(":scope > section.widget")]
+    .map((section) => {
+      const id = section.id && String(section.id).trim();
+      const h = section.querySelector(".widget__title");
+      if (!id || !h) return null;
+      const rail = [...vp.querySelectorAll(":scope > .widget--project-highlight")].find((w) => {
+        const a = w.querySelector("a.widget__hit");
+        return a && a.getAttribute("href") === `#${id}`;
+      });
+      if (!rail) return null;
+      return { id, h, section, rail };
+    })
+    .filter(Boolean);
+
+  if (!markers.length) return;
+
+  const hits = markers.map((m) => m.rail.querySelector("a.widget__hit")).filter(Boolean);
+
+  const clearActive = () => {
+    markers.forEach(({ rail }) => rail.classList.remove("widget--project-highlight--active"));
+    hits.forEach((a) => a.removeAttribute("aria-current"));
+  };
+
+  function scrollRailToShow(card) {
+    const lastRail = markers[markers.length - 1]?.rail;
+    const isLast = !!(lastRail && card === lastRail);
+    const margin = 8;
+    /* Match viewport padding-bottom + nudge strip so the last card isn’t tight against the scrollport edge. */
+    const bottomSlack = margin + (isLast ? 40 : 0);
+    const cr = card.getBoundingClientRect();
+    const vr = vp.getBoundingClientRect();
+    if (cr.top >= vr.top + margin && cr.bottom <= vr.bottom - bottomSlack) return;
+    let next = vp.scrollTop;
+    if (cr.top < vr.top + margin) next -= vr.top + margin - cr.top;
+    else if (cr.bottom > vr.bottom - bottomSlack) next += cr.bottom - (vr.bottom - bottomSlack);
+    vp.scrollTo({ top: Math.max(0, next), behavior: prefersReduce ? "auto" : "smooth" });
+  }
+
+  let lastActiveId = null;
+  let pickLockId = null;
+  let pickLockUntil = 0;
+  const PICK_MS = 520;
+
+  const setActiveById = (id, { scrollRail = true } = {}) => {
+    const hit = markers.find((m) => m.id === id);
+    if (!hit) return;
+    clearActive();
+    hit.rail.classList.add("widget--project-highlight--active");
+    const link = hit.rail.querySelector("a.widget__hit");
+    if (link) link.setAttribute("aria-current", "true");
+    const changed = id !== lastActiveId;
+    lastActiveId = id;
+    if (scrollRail && changed) scrollRailToShow(hit.rail);
+  };
+
+  const sync = () => {
+    if (pickLockId && performance.now() < pickLockUntil) {
+      setActiveById(pickLockId, { scrollRail: false });
+      return;
+    }
+    pickLockId = null;
+
+    const threshold = Math.max(72, window.innerHeight * 0.2);
+    const scrollY = window.scrollY;
+    const vh = window.innerHeight;
+    const scrollBottom = scrollY + vh;
+    const docHeight = Math.max(
+      document.documentElement.scrollHeight,
+      document.body?.scrollHeight || 0
+    );
+
+    const last = markers[markers.length - 1];
+    if (scrollBottom >= docHeight - 16) {
+      setActiveById(last.id, { scrollRail: true });
+      return;
+    }
+
+    let active = markers[0];
+    for (const m of markers) {
+      if (m.section.getBoundingClientRect().top <= threshold) active = m;
+    }
+    setActiveById(active.id, { scrollRail: true });
+  };
+
+  markers.forEach(({ rail, id }) => {
+    const hit = rail.querySelector("a.widget__hit");
+    if (!hit) return;
+    hit.addEventListener("click", () => {
+      pickLockId = id;
+      pickLockUntil = performance.now() + PICK_MS;
+      lastActiveId = null;
+      setActiveById(id, { scrollRail: true });
+    });
+  });
+
+  let ticking = false;
+  const schedule = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      ticking = false;
+      sync();
+    });
+  };
+
+  window.addEventListener("scroll", schedule, { passive: true });
+  window.addEventListener("resize", schedule, { passive: true });
+
+  window.addEventListener("hashchange", () => {
+    const hid = decodeURIComponent((location.hash || "").slice(1));
+    if (hid && markers.some((m) => m.id === hid)) {
+      pickLockId = hid;
+      pickLockUntil = performance.now() + PICK_MS;
+      lastActiveId = null;
+      setActiveById(hid, { scrollRail: true });
+    }
+    requestAnimationFrame(() => requestAnimationFrame(schedule));
+  });
+
+  const hid0 = decodeURIComponent((location.hash || "").slice(1));
+  if (hid0 && markers.some((m) => m.id === hid0)) {
+    pickLockId = hid0;
+    pickLockUntil = performance.now() + PICK_MS;
+    lastActiveId = null;
+    setActiveById(hid0, { scrollRail: true });
+  }
+
+  schedule();
+}
+
 function initProjectShotCarousels() {
   const prefersReduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)");
   const reduceMotion = !!(prefersReduce && prefersReduce.matches);
@@ -1555,6 +1802,20 @@ function initProjectShotCarousels() {
         stopHoverCycle();
       }, { passive: true });
       hoverHost.addEventListener("pointerdown", stopHoverCycle, { passive: true });
+      // If the user navigates onto a project page with the cursor already over the shot,
+      // browsers won't fire pointerenter. Sync initial :hover state after layout settles.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          try {
+            if (hoverHost.matches(":hover")) {
+              hovering = true;
+              startHoverCycle();
+            }
+          } catch {
+            // ignore
+          }
+        });
+      });
       window.addEventListener("scroll", () => {
         stopHoverCycle();
         if (resumeAfterScrollTimer) window.clearTimeout(resumeAfterScrollTimer);
@@ -2090,5 +2351,7 @@ function initExternalLinksNewTab() {
   initYear();
   initScrollingStateHint();
   initProjectShotCarousels();
+  initRailProjectsScroll();
+  initProjectsRailScrollSpy();
 })();
 
