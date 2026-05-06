@@ -149,6 +149,13 @@ a:hover{ text-decoration: underline; text-decoration-color: var(--border); }
   align-items: center;
   margin-bottom: 10px;
 }
+.brand__logoLink{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  line-height: 0;
+}
 .brand__logo{
   height: 140px;
   width: auto;
